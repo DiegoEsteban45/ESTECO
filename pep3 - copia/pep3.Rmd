@@ -1,0 +1,213 @@
+---
+title: "pep 3"
+author: "Fernando Carmona, Diego Abarca"
+date: "2025-01-03"
+output: html_document
+---
+
+```{r setup, message = FALSE}
+library(dplyr)
+library(ggpubr)
+library(plotly)
+library(kableExtra)
+library(summarytools)
+library(psych)
+library(DT)
+library(modeest)
+library("nortest")
+library(knitr)
+library("ggplot2")
+library("scales") #Arregla escalas
+library("gridExtra")
+```
+# *Pregunta 1*
+Seleccione una enfermedad de su interés del conjunto de datos y,
+utilizando documentación científica disponible en el sitio de la biblioteca de nuestra universidad,
+elabore una breve descripción en un único párrafo de no más de 200 palabras. En esta descripción,
+incluya las características principales de la enfermedad, su impacto en los/las pacientes y las razones,
+ya sean personales o académicas, por las cuales decidió seleccionarla.
+Además, analice la frecuencia de esta enfermedad en el conjunto de datos,
+especificando la proporción de pacientes afectados respecto al total de encuestados.
+Por último, incluya al menos dos referencias en formato APA para respaldar la información presentada.
+
+### Enfermedada seleccionado: (v15)
+
+*lupus eritematoso sistémico (systemic lupus erythematosus, LE): (V15)*
+
+Es una enfermedad autoinmunitaria en la que los órganos, tejidos y células se dañan por adherencia de
+diversos autoanticuerpos y complejos inmunitarios. Es decir, el sistema inmune daña del tejido sano debido
+a que no lo "reconoce". Una de las razones comunes por la cual se obtiene este enfermedad es debido a la radiación de la
+luz ultravioleta, la cual provoca axacervación en el 70% de los pacientes dañando las celulas debido a la alteración del
+DNA y las proteínas intracelulares lo cual provoca que se tornen atigénicas. Factores como heredación genetica son importantes
+a tener en cuenta para diversas enfermedades, sin embargo, para esta en concreto no es un factor realmente importante. El factor
+más importante a tener en cuenta para esta enfermedad es la fotosensibilidad derivada del ambiente.
+
+*Revista de Medicina e Investigación. (2013). https://core.ac.uk/download/pdf/55531922.pdf#page=12, Vol. 1(Núm. 1).*
+
+La razón por la cual se seleccionó es debido a la curiosidad ya que, es la
+enfermedad con mayor frecuencia, y según lo brevemente investigado es una enfermedad
+que encontramos que es bastante seria.
+
+```{r}
+data <- read.csv("Resultados encuesta anonimizados_v2.xlsx - DB.csv")
+
+enfermedad8 = data[data$V8 == "SI",]
+enfermedad9 = data[data$V9 == "SI",]
+enfermedad10 = data[data$V10 == "SI",]
+enfermedad11 = data[data$V11 == "SI",]
+enfermedad12 = data[data$V12 == "SI",]
+enfermedad13 = data[data$V13 == "SI",]
+enfermedad14 = data[data$V14 == "SI",]
+enfermedad15 = data[data$V15 == "SI",]
+enfermedad16 = data[data$V16 == "SI",]
+enfermedad17 = data[data$V17 == "SI",]
+enfermedad18 = data[data$V18 == "SI",]
+enfermedad19 = data[data$V19 == "SI",]
+enfermedad20 = data[data$V20 == "SI",]
+enfermedad21 = data[data$V21 == "SI",]
+enfermedad22 = data[data$V22 == "SI",]
+
+total = nrow(data)
+v8 = nrow(enfermedad8)
+v9 = nrow(enfermedad9)
+v10 = nrow(enfermedad10)
+v11 = nrow(enfermedad11)
+v12 = nrow(enfermedad12)
+v13 = nrow(enfermedad13)
+v14 = nrow(enfermedad14)
+v15 = nrow(enfermedad15)
+v16 = nrow(enfermedad16)
+v17 = nrow(enfermedad17)
+v18 = nrow(enfermedad18)
+v19 = nrow(enfermedad19)
+v20 = nrow(enfermedad20)
+v21 = nrow(enfermedad21)
+v22 = nrow(enfermedad22)
+
+
+enfermedades <- c("V8", "V9", "V10", "V11", "V12",
+          "V13", "V14", "V15", "V16", "V17",
+          "V18", "V19", "V20", "V21", "V22")
+
+n_enfermedades <- c(v8, v9, v10, v11, v12,
+                 v13, v14, v15, v16, v17,
+                 v18, v19, v20, v21, v22)
+
+data_enfermedad <- data.frame(enfermedad = enfermedades, number_of_yes = n_enfermedades)
+
+fig <- plot_ly(data_enfermedad, x = ~enfermedad, y = ~number_of_yes, type = 'bar',
+               marker = list(color = 'skyblue'))
+
+fig <- fig %>%
+  layout(title = "Número de personas afectadas por enfermedad",
+         xaxis = list(title = "Tipo de enfermedad", tickangle = -45),
+         yaxis = list(title = "Personas afectadas"),
+         margin = list(b = 100))  # Espacio adicional para etiquetas inclinadas
+fig
+
+```
+
+```{r}
+v15
+total
+
+porcentaje = v15/total
+porcentaje
+```
+
+### 2)
+## Variable género
+Escogimos el género de los encuestados por que, es de interés saber si esta enfermedad afectá
+a cierto género más que a otro.
+
+```{r}
+enfermedad15_hombres =  enfermedad15[enfermedad15$V1 == "Masculino", ]
+enfermedad15_mujeres =  enfermedad15[enfermedad15$V1 == "Femenino", ]
+enfermedad15_otros =  enfermedad15[enfermedad15$V1 == "Otro", ]
+
+hombres = nrow(enfermedad15_hombres)
+mujeres = nrow(enfermedad15_mujeres)
+otros = nrow(enfermedad15_otros)
+
+genero <- c("Masculino", "Femenino", "Otro")
+
+n_afectado <- c(hombres, mujeres, otros)
+
+data_enfermedad15_genero <- data.frame(genero = genero, numero = n_afectado)
+
+fig2 <- plot_ly(data_enfermedad15_genero, x = ~genero, y = ~numero, type = 'bar',
+               marker = list(color = 'skyblue'))
+
+fig2 <- fig2 %>%
+  layout(title = "Género de personas afectadas por la enfermedad",
+         xaxis = list(title = "Género", tickangle = -45),
+         yaxis = list(title = "Personas afectadas"),
+         margin = list(b = 100))  # Espacio adicional para etiquetas inclinadas
+fig2
+```
+Debido a la falta de datos para otros, se realizará una prueba de contraste de 2 muestras,
+no pareadas, es decir, ambas muestras no se afectán una de las otras.
+
+```{r}
+enfermedad15_no = data[data$V15 == "NO",]
+enfermedad15_hombres_no =  enfermedad15_no[enfermedad15_no$V1 == "Masculino", ]
+enfermedad15_mujeres_no =  enfermedad15_no[enfermedad15_no$V1 == "Femenino", ]
+
+tabla
+
+chisq.test(enfermedad15_hombres$V15, enfermedad15_mujeres$V15, paired = FALSE)
+```
+
+Las enfermedades con mayor frecuencia que se tienen cuando tiene lupus eritematoso sistémico
+```{r}
+enfermedad8 = enfermedad15[enfermedad15$V8 == "SI",]
+enfermedad9 = enfermedad15[enfermedad15$V9 == "SI",]
+enfermedad10 = enfermedad15[enfermedad15$V10 == "SI",]
+enfermedad11 = enfermedad15[enfermedad15$V11 == "SI",]
+enfermedad12 = enfermedad15[enfermedad15$V12 == "SI",]
+enfermedad13 = enfermedad15[enfermedad15$V13 == "SI",]
+enfermedad14 = enfermedad15[enfermedad15$V14 == "SI",]
+enfermedad16 = enfermedad15[enfermedad15$V16 == "SI",]
+enfermedad17 = enfermedad15[enfermedad15$V17 == "SI",]
+enfermedad18 = enfermedad15[enfermedad15$V18 == "SI",]
+enfermedad19 = enfermedad15[enfermedad15$V19 == "SI",]
+enfermedad20 = enfermedad15[enfermedad15$V20 == "SI",]
+enfermedad21 = enfermedad15[enfermedad15$V21 == "SI",]
+enfermedad22 = enfermedad15[enfermedad15$V22 == "SI",]
+
+total = nrow(data)
+v8 = nrow(enfermedad8)
+v9 = nrow(enfermedad9)
+v10 = nrow(enfermedad10)
+v11 = nrow(enfermedad11)
+v12 = nrow(enfermedad12)
+v13 = nrow(enfermedad13)
+v14 = nrow(enfermedad14)
+v16 = nrow(enfermedad16)
+v17 = nrow(enfermedad17)
+v18 = nrow(enfermedad18)
+v19 = nrow(enfermedad19)
+v20 = nrow(enfermedad20)
+v21 = nrow(enfermedad21)
+v22 = nrow(enfermedad22)
+
+enfermedades <- c("V8", "V9", "V10", "V11", "V12",
+          "V13", "V14", "V16", "V17",
+          "V18","V19", "V20", "V21", "V22")
+
+n_enfermedades <- c(v8, v9, v10, v11, v12,
+                 v13, v14, v16, v17,
+                 v18, v19, v20, v21, v22)
+
+data_enfermedad <- data.frame(enfermedad = enfermedades, number_of_yes = n_enfermedades)
+
+fig3 <- plot_ly(data_enfermedad, x = ~enfermedad, y = ~number_of_yes, type = 'bar',
+               marker = list(color = 'skyblue'))
+
+fig3 <- fig3 %>%
+  layout(title = "Número de personas afectadas por enfermedad",
+         xaxis = list(title = "Tipo de enfermedad", tickangle = -45),
+         yaxis = list(title = "Personas afectadas"),
+         margin = list(b = 100))  # Espacio adicional para etiquetas inclinadas
+fig3
+```
