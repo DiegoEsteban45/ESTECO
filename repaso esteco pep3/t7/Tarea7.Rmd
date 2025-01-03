@@ -1,0 +1,128 @@
+---
+title: "Tarea 7 "
+author: "Diego Abarca, Fernando Carmona"
+date: "2024-10-31"
+output: html_document
+---
+```{r setup, message = FALSE}
+library(ggpubr)
+library("BSDA")
+library(summarytools)
+library(DT)
+library(dplyr)
+library(psych)
+```
+
+# *tarea 7:*
+
+## 1° parte
+
+### a) Defina las hipótesis a contrastar.
+
+Como la hipótesis planteada es que el mejor tiempo medio de los atletas de raza Negra después de ingresar al programa de entrenamiento es mayor a 12.4 segundos.
+
+Entonces hipótesis nula es : Ho: mu >= 12.4seg
+
+La hipótesis alternativa será que el mejor tiempo medio de los atletas de raza oriental antes del programa, no es igual a 12,4 segundos.
+Ha: mu < 12.4 seg
+
+```{r}
+Test_Velocidad_Negra <- read.csv2("data.csv")
+
+Test_Velocidad_Negra =  Test_Velocidad_Negra[Test_Velocidad_Negra$Raza =="Negra",]
+
+DEntrenamiento = Test_Velocidad_Negra[,4]
+
+Metricas = describe(DEntrenamiento,IQR=T,quant=c(.25,.50,.75))
+
+Metricas
+
+
+```
+### b) Proponga un procedimiento adecuado para el análisis.
+Primero analizar que tipo de test es el adecuado para analizar la vericidad de la afirmación que se muestra en el enunciado.
+para eso primero analizamos los datos que tenemos:
+
+#### 1) Análisis de la distribución de los datos
+El primer paso es determinar qué tipo de distribución siguen los datos del conjunto de datos denominado "Test_Velocidad_Oriental". Para ello, aplicamos el test de Shapiro-Wilk (shapiro.test) y complementamos el análisis con la visualización generada por un QQ-plot.
+
+```{r}
+v.test <- shapiro.test(DEntrenamiento)
+v.test
+```
+El valor del p-value resultante es mayor a 0.05, lo que sugiere que los datos siguen probablemente una distribución normal. El test de Shapiro-Wilk evalúa la hipótesis nula de que los datos provienen de una distribución normal, y dado que no rechazamos esta hipótesis, concluimos que la distribución es probablemente normal. Esta conclusión se refuerza aún más con la gráfica generada a continuación.
+
+```{r}
+# QQ-plot
+qqnorm(DEntrenamiento)
+qqline(DEntrenamiento, col = "red")  # Agregar la línea de referencia
+
+```
+
+Como se puede observar, los puntos en el gráfico siguen una línea de tendencia recta, lo que hace más probable que los datos sigan una distribución normal.
+
+#### 2) Tamaño de la muestra y conocimiento sobre la varianza o la desviación estandar
+
+El siguiente paso es verificar el tamaño de la muestra y determinar si conocemos la varianza o la desviación tanto poblacional o muestral.
+En este caso, sabemos que la muestra tiene menos de 30 datos (28) y no se conoce la varianza poblacional pero si podemos obtener la
+varianza o desviación muestral que en este caso seria 1.26
+
+#### Conclusión del análisis
+Con estos análisis en mano, podemos concluir que el test adecuado para analizar la veracidad de
+la afirmación es el t-test. Esto es posible porque cumplimos con todas las condiciones necesarias:
+la muestra es pequeña (menos de 30 datos), conocemos la desviación muestral y los datos siguen una probable distribución normal.
+
+
+### C) Verifique las condiciones necesarias del procedimiento y ejecútelo.
+
+#### Datos:
+\( \tilde{X} \) = 12.4
+
+μ = ¿?
+
+σ = 1.26
+
+n = 28
+
+```{r}
+t = t.test(DEntrenamiento,y=NULL, alternative = "less", mu = 12.4, conf.level=0.95)
+t
+```
+Obtuvimos que el promedio (μ) es mayor a 12.4 siendo 12.54
+μ = 12.54
+
+### D) Interprete los resultados obtenidos en el contexto del problema.
+
+Como obtuvimos que el promedio (μ) es mayor a 12.4 com un intervalo de confianza del 95%, entonces no se rechaza la hipótesis nula por lo tanto se puede
+concluir que la afirmación propuesta por el comité olímpico es correcta.
+
+## 2° parte
+
+### a)
+Según el dataset de notas de los alumnos de ingeniería, se afirma que las notas de la media de
+los estudiantes que cursaron cálculo en el semestre 2024-1 es una nota aprovatoría.
+¿ Es está afirmación correcta ?
+
+### b)
+Variable a medir será las notas de los estudiantes de ingenería en cálculo del semestre 2024-1.
+
+### c)
+La muestra seran las notas finales de los estudiantes de ingeniería en cálculo del semestre 2024-1.
+
+### d)
+
+La hipótesis nula será que la media de los estudiantes de ingenería del semestre 2024-1 es mayor o igual a 4.
+Expresada matemáticamente como: Ho: mu >= 4.
+
+Por tanto, la hipótesis alternativa será que la media de las notas es menor a 4
+Expresado matemáticamente como: Ha: mu < 4
+
+#### 3 parte
+
+El error tipo 1 es el error cuando se encuentra un falso positivo, cuando se acepta la hipótesis
+nula cuando esta se debería rechazar, María estaba en lo correcto. Mientras que el error tipo 2,
+es un falso negativo, cuando se rechaza la hipótesis nula y se acepta la alternativa cuando la
+nula era verdader, José estraba incorrecto.
+
+
+ 

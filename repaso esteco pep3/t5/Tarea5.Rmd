@@ -1,0 +1,700 @@
+---
+title: "Tarea 5 "
+author: "Diego Abarca, Fernando Carmona"
+date: "2024-10-04"
+output: html_document
+---
+
+```{r setup, message = FALSE}
+library(dplyr)
+library(ggpubr)
+library(plotly)
+library(kableExtra)
+library(summarytools)
+library(psych)
+library(DT)
+library(modeest)
+```
+
+# *tarea 5: 1º Parte*
+
+De acuerdo a los datos de la página mencionada en la tarea, se seleccionó el dataset de una campaña de marketing de un banco, el cual se puede encontrar en el siguiente enlace: <https://archive.ics.uci.edu/dataset/222/bank+marketing>.
+
+#### *Los datos están relacionados con campañas de marketing directo (llamadas telefónicas) de una institución bancaria portuguesa. El objetivo de la clasificación es predecir si el cliente suscribirá un depósito a plazo*
+
+## Descripción de las variables
+
+### Datos del cliente bancario
+
+1.  **age**: edad (numérico).
+2.  **job**: tipo de trabajo (categórico: "admin.", "blue-collar", "entrepreneur", "housemaid", "management", "retired", "self-employed", "services", "student", "technician", "unemployed", "unknown").
+3.  **marital**: estado civil (categórico: "divorced", "married", "single", "unknown"; nota: "divorced" incluye divorciado o viudo).
+4.  **education**: nivel educativo (categórico: "basic.4y", "basic.6y", "basic.9y", "high.school", "illiterate", "professional.course", "university.degree", "unknown").
+5.  **default**: ¿tiene crédito en incumplimiento? (categórico: "no", "yes", "unknown").
+6.  **housing**: ¿tiene préstamo para vivienda? (categórico: "no", "yes", "unknown").
+7.  **loan**: ¿tiene préstamo personal? (categórico: "no", "yes", "unknown").
+
+### Datos relacionados con el último contacto de la campaña actual
+
+8.  **contact**: tipo de comunicación de contacto (categórico: "cellular", "telephone").
+9.  **month**: mes del último contacto en el año (categórico: "jan", "feb", "mar", ..., "nov", "dec").
+10. **day_of_week**: día de la semana del último contacto (categórico: "mon", "tue", "wed", "thu", "fri").
+11. **duration**: duración del último contacto en segundos (numérico). **Nota importante**: este atributo influye mucho en el objetivo de salida (por ejemplo, si duration=0 entonces y="no"). Sin embargo, la duración no se conoce antes de realizar una llamada. Además, después de finalizar la llamada, el valor de y se conoce. Por lo tanto, esta entrada solo debe incluirse con fines de referencia y debe descartarse si se pretende crear un modelo predictivo realista.
+
+### Otras características
+
+12. **campaign**: número de contactos realizados durante esta campaña para este cliente (numérico, incluye el último contacto).
+13. **pdays**: número de días transcurridos desde el último contacto del cliente en una campaña anterior (numérico; 999 significa que el cliente no fue contactado anteriormente).
+14. **previous**: número de contactos realizados antes de esta campaña para este cliente (numérico).
+15. **poutcome**: resultado de la campaña de marketing anterior (categórico: "failure", "nonexistent", "success").
+
+### Características del contexto social y económico
+
+16. **emp.var.rate**: tasa de variación del empleo - indicador trimestral (numérico).
+17. **cons.price.idx**: índice de precios al consumidor - indicador mensual (numérico).
+18. **cons.conf.idx**: índice de confianza del consumidor - indicador mensual (numérico).
+19. **euribor3m**: tasa euribor a 3 meses - indicador diario (numérico).
+20. **nr.employed**: número de empleados - indicador trimestral (numérico).
+
+### Output variable (desired target):
+
+21. **y**: si el cliente se a suscrito a un deposito de plazo (binary: "yes","no")
+
+## Dataset asociado.
+
+```{r}
+banks_data <- read.csv2("bank-additional-full.csv")
+
+banks_data <- banks_data %>%
+  mutate(
+    emp.var.rate = as.numeric(emp.var.rate),
+    cons.price.idx = as.numeric(cons.price.idx),
+    cons.conf.idx = as.numeric(cons.conf.idx),
+    euribor3m = as.numeric(euribor3m),
+    nr.employed = as.numeric(nr.employed)
+  )
+
+```
+
+### Tabla descriptiva de las variables cuantitativas del dataset
+
+```{r}
+age <-(banks_data[,1]) # vector con las edades
+duration <-(banks_data[,11]) # duración de la ultima llamada en segúndos
+campaign <- (banks_data[,12]) # número de contactos realizados durante la campaña para un cliente en específico
+pday <- (banks_data[,13]) # vetor con los números de días desde la ultima llamada
+previous <- (banks_data[,14]) # número de contactos antes de la campaña
+emp.varate.rate <-(banks_data[,16])  # tasa de variación del empleo durante la campaña
+cons.price.idx <- (banks_data[,17]) # el mínimo sueldo para vivir
+cons.conf.idx <- (banks_data[,18]) # idice de confianza, si estan inviertiendo, ahorrando o solo sobreviviendo
+euribor3m <- (banks_data[,19]) # El Euribor a 3 meses es el tipo de interés a la que una selección de bancos europeos se prestan dinero entre sí en euros con vencimientos a 3 meses
+nr.employed <- (banks_data[,20]) # números de empleados
+
+cuantitative_banks_data<- data.frame(age, duration, campaign, pday, previous, emp.varate.rate, cons.price.idx, cons.conf.idx, euribor3m, nr.employed)
+
+metricas = describe(cuantitative_banks_data,IQR=T,quant=c(.25,.50,.75)) #Cálculo e métricas
+
+datatable(
+  metricas, 
+  options = list(pageLength = 10),
+  caption = "Tabla descriptiva de los datos cuantitativos"
+)
+
+tabla_descriptiva <- data.frame("Variables" = c("age", "job", "education", "default", "loan", "contact", "month", "day_of_wek", "duration", "campaign", "pdays", "previous", "poutcome", "emp.var.rate", "cons.price.idx","con.conf.idx","euribor3m", "nr.emplyes", "y"),
+                              "Descripción" = c(
+                                "Edad", 
+                                "Tipo de trabajo",
+                                "nivel educativo",
+                                "Si tiene algún credito por pagar",
+                                "Si tiene algún prestamo",
+                                "Tipo de comunicación",
+                                "Mes de la última vez que se contacto",
+                                "Día de la semanda de ultima vez que se contacto",
+                                "duración de la llamada",
+                                "Número de llamadas dentro de la capaña",
+                                "Número de días antes del último contacto",
+                                "Número de contactos realizados antes de la campaña anterior",
+                                "Resultados de la campaña de marketing",
+                                "Tasa de variación del empleo (trimestral)",
+                                "índice de precios al consumidor(indicador mensual)",
+                                "índice de confianza del consumidor(indicador mensual)",
+                                "tasa euribor a 3 meses(indicador diario)",
+                                "Número de empleados(indicador trimestral)",
+                                "Si se subscribio al deposito de plazo"
+                                ),
+                              "Tipo de variable" = c(
+                                "cuantitativa", 
+                                "cualitativa", 
+                                "cualitativa",
+                                "cualitativa",
+                                "cualitativa",
+                                "cualitativa",
+                                "cualitativa",
+                                "cualitativa",
+                                "cuantitativa",
+                                "cuantitativa",
+                                "cuantitativa",
+                                "cuantitativa",
+                                "cualitativa",
+                                "cuantitativa",
+                                "cuantitativa",
+                                "cuantitativa",
+                                "cuantitativa",
+                                "cuantitativa",
+                                "cualitativa"
+                                ))
+  
+tabla <- kable(tabla_descriptiva , 
+               caption = "Tabla 1.- Tabla descriptiva ") %>%
+              kable_styling(full_width = F) %>%
+              column_spec(1, bold = T, border_right = T)
+tabla
+
+```
+
+### Graficos de barra asociados
+
+#### 1º Grafico de barra
+
+```{r}
+admin =              banks_data[banks_data$job =="admin." & banks_data$y=="yes",] 
+blue_collar =   banks_data[banks_data$job =="blue-collar" & banks_data$y=="yes",] 
+entrepreneur = banks_data[banks_data$job =="entrepreneur" & banks_data$y=="yes",] 
+housemaid =       banks_data[banks_data$job =="housemaid" & banks_data$y=="yes",]
+management =     banks_data[banks_data$job =="management" & banks_data$y=="yes",]
+retired =           banks_data[banks_data$job =="retired" & banks_data$y=="yes",]
+self_employed = banks_data[banks_data$job =="self-employed " & banks_data$y=="yes",]
+services =         banks_data[banks_data$job =="services" & banks_data$y=="yes",]
+student =           banks_data[banks_data$job =="student" & banks_data$y=="yes",]
+technician =     banks_data[banks_data$job =="technician" & banks_data$y=="yes",]
+unemployed =     banks_data[banks_data$job =="unemployed" & banks_data$y=="yes",]
+unknow =             banks_data[banks_data$job =="unknow" & banks_data$y=="yes",]
+
+admin = nrow(admin)
+blue_collar = nrow(blue_collar)
+entrepreneur = nrow(entrepreneur)
+housemaid = nrow(housemaid)
+management = nrow(management)
+retired = nrow(retired)
+self_employed = nrow(self_employed)
+services = nrow(services)
+student = nrow(student)
+technician = nrow(technician)
+unemployed = nrow(unemployed)
+unknow = nrow(unknow)
+
+jobs <- c("admin.", "blue-collar", "entrepreneur", "housemaid", "management", 
+          "retired", "self-employed", "services", "student", "technician", 
+          "unemployed", "unknow")
+
+n_employees <- c(admin, blue_collar, entrepreneur, housemaid, management, 
+                 retired, self_employed, services, student, technician, 
+                 unemployed, unknow)
+
+data_jobs_sus <- data.frame(job = jobs, number_of_yes = n_employees)
+
+fig <- plot_ly(data_jobs_sus, x = ~job, y = ~number_of_yes, type = 'bar',
+               marker = list(color = 'skyblue'))
+
+fig <- fig %>%
+  layout(title = "Número de subscripciones aceptadas por profesión",
+         xaxis = list(title = "Tipo de trabajo", tickangle = -45),
+         yaxis = list(title = "Número de suscripciones aceptadas"),
+         margin = list(b = 100))  # Espacio adicional para etiquetas inclinadas
+fig
+
+```
+
+*Descripción del grafico 1º*
+
+El gráfico anterior muestra la cantidad total de suscripciones aceptadas, categorizadas por profesión. Se observa que las personas con la profesión de administrador son las que más aceptaron esta suscripción de depósito a plazo.
+
+#### 2° Gráfico de barra
+
+```{r}
+menor_250 = banks_data[banks_data$duration <= 250 & banks_data$y=="yes",] # menor a 250
+menor_500 = banks_data[banks_data$duration > 250 & banks_data$duration <= 500 & banks_data$y=="yes",]
+menor_750 = banks_data[banks_data$duration > 500 & banks_data$duration <= 750 & banks_data$y=="yes",]
+menor_1000 = banks_data[banks_data$duration > 750 & banks_data$duration <= 1000 & banks_data$y == "yes",]  
+menor_1250 = banks_data[banks_data$duration > 1000 & banks_data$duration <= 1250 & banks_data$y == "yes",]  
+menor_1500 = banks_data[banks_data$duration > 1250 & banks_data$duration <= 1500 & banks_data$y == "yes",]  
+menor_1750 = banks_data[banks_data$duration > 1500 & banks_data$duration <= 1750 & banks_data$y == "yes",]  
+menor_2000 = banks_data[banks_data$duration > 1750 & banks_data$duration <= 2000 & banks_data$y == "yes",]  
+menor_2250 = banks_data[banks_data$duration > 2000 & banks_data$duration <= 2250 & banks_data$y == "yes",]  
+menor_2500 = banks_data[banks_data$duration > 2250 & banks_data$duration <= 2500 & banks_data$y == "yes",]  
+menor_2750 = banks_data[banks_data$duration > 2500 & banks_data$duration <= 2750 & banks_data$y == "yes",]  
+menor_3000 = banks_data[banks_data$duration > 2750 & banks_data$duration <= 3000 & banks_data$y == "yes",]
+menor_3250 = banks_data[banks_data$duration > 3000 & banks_data$duration <= 3250 & banks_data$y == "yes",]  
+menor_3500 = banks_data[banks_data$duration > 3250 & banks_data$duration <= 3500 & banks_data$y == "yes",]  
+menor_3750 = banks_data[banks_data$duration > 3500 & banks_data$duration <= 3750 & banks_data$y == "yes",]  
+
+menor_250 = nrow(menor_250)
+menor_500 = nrow(menor_500)
+menor_750 = nrow(menor_750)
+menor_1000 = nrow(menor_1000)
+menor_1250 = nrow(menor_1250)
+menor_1500 = nrow(menor_1500)
+menor_1750 = nrow(menor_1750)
+menor_2000 = nrow(menor_2000)
+menor_2250 = nrow(menor_2250)
+menor_2500 = nrow(menor_2500)
+menor_2750 = nrow(menor_2750)
+menor_3000 = nrow(menor_3000)
+menor_3250 = nrow(menor_3250)
+menor_3500 = nrow(menor_3500)
+menor_3750 = nrow(menor_3750)
+
+rango <- c("0-250", "250-500", "500-750", "750-1000", "1000-1250", "1250-1500", "1500-1750", "1750-2000", "2000-2250", "2250-2500", "2500-2750", "2750-3000", "3000-3250", "3250-3500", "3500-3750")
+
+number_of_yes_rango <- c(menor_250, menor_500, menor_750, menor_1000, menor_1250, menor_1500, 
+                         menor_1750, menor_2000, menor_2250, menor_2500, menor_2750, menor_3000,
+                         menor_3250, menor_3500, menor_3750)
+
+
+data_duration_sus <- data.frame(duración = rango, number_of_yes = number_of_yes_rango)
+
+
+data_duration_sus$duración <- factor(data_duration_sus$duración, levels = rango)
+
+fig <- plot_ly(data_duration_sus, x = ~duración, y = ~number_of_yes, type = 'bar',
+               marker = list(color = 'orange'))
+
+fig <- fig %>%
+  layout(title = "Número de subscripciones aceptadas según duración de las llamadas",
+         xaxis = list(title = "Duración de llamada en segundos"),
+         yaxis = list(title = "Número de subscripciones aceptadas"),
+         margin = list(b = 100))  # Espacio adicional para etiquetas inclinadas
+
+fig
+```
+
+*Descripción del grafico 2º*
+
+El gráfico anterior muestra la duración de las llamadas en intervalos de 250 segundos y el número de suscripciones aceptadas en esos períodos de tiempo. Se observa, por ejemplo, que las llamadas con una duración de entre 250 y 500 segundos tuvieron una mayor aceptación de suscripciones, y a partir de ahí, las suscripciones aceptadas disminuyen gradualmente mientras las llamadas se hacen más largas.
+
+#### 3° Gráfico de barras
+
+```{r}
+menor_17 = banks_data[banks_data$age <= 17 & banks_data$y=="yes",] 
+menor_27 = banks_data[banks_data$age > 17 & banks_data$age <= 27 & banks_data$y == "yes",]
+menor_37 = banks_data[banks_data$age > 27 & banks_data$age <= 37 & banks_data$y == "yes",]
+menor_47 = banks_data[banks_data$age > 37 & banks_data$age <= 47 & banks_data$y == "yes",] 
+menor_57 = banks_data[banks_data$age > 47 & banks_data$age <= 57 & banks_data$y == "yes",]  
+menor_67 = banks_data[banks_data$age > 57 & banks_data$age <= 67 & banks_data$y == "yes",]  
+menor_77 = banks_data[banks_data$age > 67 & banks_data$age <= 77 & banks_data$y == "yes",] 
+menor_87 = banks_data[banks_data$age > 77 & banks_data$age <= 87 & banks_data$y == "yes",]  
+menor_97 = banks_data[banks_data$age > 87 & banks_data$age <= 97 & banks_data$y == "yes",]  
+
+menor_17 = nrow(menor_17)
+menor_27 = nrow(menor_27)
+menor_37 = nrow(menor_37)
+menor_47 = nrow(menor_47)
+menor_57 = nrow(menor_57)
+menor_67 = nrow(menor_67)
+menor_77 = nrow(menor_77)
+menor_87 = nrow(menor_87)
+menor_97 = nrow(menor_97)
+
+rango_ed <- c("0-17", "17-27", "27-37", "37-47", "47-57", "57-67", "67-77", "77-87",
+           "87-97")
+
+number_of_yes_edad <- c(menor_17, menor_27, menor_37, menor_47, menor_57, menor_67, 
+                         menor_77, menor_87, menor_97)
+
+data_edad_sus <- data.frame(edad = rango_ed, number_of_yes = number_of_yes_edad)
+
+# Crear el gráfico de barras con plotly
+fig <- plot_ly(data_edad_sus, x = ~edad, y = ~number_of_yes, type = 'bar', 
+               marker = list(color = 'gold'))
+fig <- fig %>%
+  layout(title = "Número de subs aceptadas según rangos de edades",
+         xaxis = list(title = "Rango de edades", tickangle = -45),
+         yaxis = list(title = "Número de suscripciones aceptadas"),
+         margin = list(b = 100)) 
+fig
+
+
+```
+
+*Descripción del grafico 2º*
+
+El gráfico muestra los rangos de edades en intervalos de 10 años frente a las cantidades de suscripciones aceptadas en esos rangos. Se observa que las personas entre 27 y 37 años fueron las que más suscripciones aceptaron con mucha diferencia por ejemplo.
+
+### Gráfico Diagrama de Cajas
+
+```{r}
+jobs <- banks_data[,2]
+
+data_jobs_age <- data.frame(trabajo = jobs, edad = age)
+
+fig <- plot_ly(data_jobs_age, x = ~trabajo, y = ~age, type = 'box',
+               marker = list(color = 'purple'))
+
+fig <- fig %>%
+  layout(title = "Frecuencia de Edades por trabajo",
+         xaxis = list(title = "Empleo", tickangle = -45),
+         yaxis = list(title = "Edad"),
+         margin = list(b = 100))
+fig
+```
+
+*Descripción del gráfico de cajas*
+
+Estos gráficos de cajas son una excelente herramienta para visualizar la simetría de los datos. Este gráfico muestra la concentración de personas con ciertas profesiones según las edades que tienen. Por ejemplo, en el caso de los administradores, se puede observar que la mayoría de las personas que ejercen esta profesión están concentradas entre las edades de 36 y 44 años. Además, se destacan pocos casos, o más bien casos atípicos, en los que las personas con dicha profesión tienen una edad superior a los 64 años y este análisis de ejemplo se puede efectuar en cada profesión.
+
+### Gráfico Histograma
+
+```{r}
+jobs <- banks_data[,2]
+
+admin_edad = data_jobs_age[data_jobs_age$trabajo == "admin.",]
+
+fig <- plot_ly(admin_edad, x = ~edad, y = ~trabajo, type = 'histogram',
+               marker = list(color = 'lightgreen'))
+
+fig <- fig %>%
+  layout(
+    title = "Frecuencia de las edades de los administradores",
+    xaxis = list(title = "Edad", tickangle = -45),
+    yaxis = list(
+      title = "Cantidad de administradores",
+      tickvals = seq(0, 1200, by = 100)
+    ),
+    margin = list(b = 100)
+  )
+fig
+
+```
+
+*Descripción del gráfico Histograma*
+
+Con este tipo de gráficos, se puede obtener una visión más detallada de la concentración de los datos. En este caso, se observa la distribución de las edades de las personas con la profesión de administrador, revelando que la mayoría de los administradores tienen entre 30 y 40 años teniendo un peak en los 33 años. Al igual que en los diagramas de cajas, este gráfico permite visualizar fácilmente la simetría de los datos.
+
+### Gráfico de puntos
+
+```{r}
+# Crear un vector de colores para cada punto
+num_points <- nrow(banks_data)  # Número de puntos en los datos
+my_colors <- sample(c('#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', 
+                      '#e31a1c', '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a', 
+                      '#ffff99', '#b15928'), num_points, replace = TRUE)
+
+fig <- plot_ly(data=banks_data,x=~age,y=~cons.conf.idx,frame=~job,
+        type="scatter", mode="markers", 
+        marker = list(color = my_colors,  # Asignar colores personalizados
+                      size = 5),  # Tamaño de los puntos
+        width=600, height=600,
+        symbol=I("circle-dot"),
+        showlegend=FALSE)
+
+fig <- fig %>%
+  layout(
+    title = "Confianza según edad por cada trabajo",
+    xaxis = list(title = "Edad"),
+    yaxis = list(
+      title = "Índice Confianza")
+  )
+fig
+
+```
+
+Con el gráfico de puntos, o dispersión, podemos ver la dispersión de una gran cantidad de datos. Con esté gráfico, podemos ver que no existe mucha diferencia en el índice de confianza según la edad. Peró, al comparar según los trabajos, vemos que los empleos con mayor cantidad de gente en un índice de confianza son los technician y los retired, que trabajarían como técnicos y ya retirados.
+
+# Tarea 5: 2º Parte.
+
+## Dataset asociado vinos blancos.
+
+```{r}
+vino_blanco_data <- read.csv2("winequality-white.csv")
+
+vino_blanco_data <- vino_blanco_data %>%
+  mutate(
+     fixed.acidity = as.numeric(fixed.acidity),
+    volatile.acidity = as.numeric(volatile.acidity),
+    citric.acid = as.numeric(citric.acid),
+    residual.sugar = as.numeric(residual.sugar),
+    chlorides = as.numeric(chlorides),
+    free.sulfur.dioxide = as.numeric(free.sulfur.dioxide),
+    total.sulfur.dioxide = as.numeric(total.sulfur.dioxide),
+    density = as.numeric(density),
+    pH = as.numeric(pH),
+    sulphates = as.numeric(sulphates),
+    alcohol = as.numeric(alcohol),
+    quality = as.factor(quality))
+
+```
+
+### Tabla descriptiva del dataset vino blanco
+
+```{r}
+fixed.acidity <-(vino_blanco_data[,1]) # vector con las acidad fija
+volatile.acidity <-(vino_blanco_data[,2]) # acidad volatil
+citric.acid <- (vino_blanco_data[,3]) # acidad citrica
+residual.sugar <- (vino_blanco_data[,4]) # azúcar residual
+chlorides <- (vino_blanco_data[,5]) # cloruro
+free.sulfur.dioxide <-(vino_blanco_data[,6])  # dioxido de sulfuro libre
+total.sulfur.dioxide <- (vino_blanco_data[,7]) # dioxido de sulfuro total
+density.vino <- (vino_blanco_data[,8]) # densidad del vino
+ph <- (vino_blanco_data[,9]) # ph del vino
+sulphates <- (vino_blanco_data[,10]) #creo que se refiere a sulphites o sulfitos que preservan a los vinos, porque sulphates se utiliza para la espuma de shampo y jabón
+alcohol <- (vino_blanco_data[,11]) #grado de alcohol, del vino 
+quality <- (vino_blanco_data[,12]) #calidad del vino
+
+vino_blanco_data_frame <- data.frame(fixed.acidity, volatile.acidity, citric.acid, residual.sugar, chlorides, free.sulfur.dioxide, total.sulfur.dioxide, density.vino, ph, sulphates, alcohol, quality)
+
+metricas = describe(vino_blanco_data_frame,IQR=T,quant=c(.25,.50,.75)) #Cálculo e métricas
+
+datatable(
+  metricas, 
+  options = list(pageLength = 10),
+  caption = "Tabla descriptiva del vino blanco"
+)
+
+tabla_descriptiva_2 <- data.frame("Variables" = c(
+                                      "fixed.acidity", 
+                                      "volatile.acidity", 
+                                      "citric.acid",
+                                      "residual.sugar",
+                                      "chlorides",
+                                      "free.sulfur.dioxide",
+                                      "total.sulfur.dioxide",
+                                      "density.vino",
+                                      "ph",
+                                      "sulphates",
+                                      "alcohol",
+                                      "quality"),
+                              "Descripción" = c(
+                                  "Concentración Acides fija", 
+                                  "Concentración acides volatil", 
+                                  "Concentración acides citrica",
+                                  "Azúcar residual",
+                                  "Concentración de cloruro",
+                                  "Dioxido de sulfuro libre",
+                                  "Dioxido de sulfuro total",
+                                  "Densidad del vino",
+                                  "pH del vino",
+                                  "Sulfitos que preservan a los vinos",
+                                  "Grado de alcohol del vino ",
+                                  "calidad del vino"
+                                  ),
+                              "Tipo de variable" = c(
+                                  "Cuantitativa",
+                                  "Cuantitativa", 
+                                  "Cuantitativa",
+                                  "Cuantitativa",
+                                  "Cuantitativa",
+                                  "Cuantitativa",
+                                  "Cuantitativa",
+                                  "Cuantitativa",
+                                  "Cuantitativa",
+                                  "Cuantitativa",
+                                  "Cuantitativa",
+                                  "Cualitativa"))
+  
+tabla2 <- kable(tabla_descriptiva_2, 
+               caption = "Tabla 2.- Tabla descriptiva") %>%
+              kable_styling(full_width = F) %>%
+              column_spec(1, bold = T, border_right = T)
+tabla2
+
+```
+
+### Relación componentes y calidad de vino blanco
+
+##### Relación acidez vs calidad (1)
+
+```{r}
+fig <- plot_ly(vino_blanco_data, x = ~quality, y = ~fixed.acidity, type = 'box',
+               marker = list(color = 'purple'))
+fig <- fig %>%
+  layout(title = "Frecuencia de la acidez fija por calidad de vino",
+         xaxis = list(title = "Niveles de calidad"),
+         yaxis = list(title = "Acides",  tickvals = seq(3.8, 14.2, by = 0.8)),
+         margin = list(b = 100))
+fig
+cat("Media: ", mean(fixed.acidity))
+cat("\nMediana: ",median(fixed.acidity))
+cat("\nModa: ",mfv(fixed.acidity))
+```
+
+##### Relación acidez volatil vs calidad (2)
+
+```{r}
+fig <- plot_ly(vino_blanco_data, x = ~quality, y = ~volatile.acidity, type = 'box',
+               marker = list(color = 'purple'))
+fig <- fig %>%
+  layout(title = "Frecuencia de la acidez volátil por calidad de vino",
+         xaxis = list(title = "Niveles de calidad"),
+         yaxis = list(title = "Acides",  tickvals = seq(min(vino_blanco_data$volatile.acidity), max(vino_blanco_data$volatile.acidity), by = 0.1)),
+         margin = list(b = 100))
+fig
+cat("Media: ",mean(volatile.acidity))
+cat("\nMediana: ",median(volatile.acidity))
+cat("\nModa: ",mfv(volatile.acidity))
+```
+
+##### Relación acidez cítrica vs calidad (3)
+
+```{r}
+fig <- plot_ly(vino_blanco_data, x = ~quality, y = ~citric.acid, type = 'box',
+               marker = list(color = 'purple'))
+fig <- fig %>%
+  layout(title = "Frecuencia de la acidez cítrica por calidad de vino",
+         xaxis = list(title = "Niveles de calidad"),
+         yaxis = list(title = "Acides",  tickvals = seq(min(vino_blanco_data$citric.acid), max(vino_blanco_data$citric.acid), by = 0.1)),
+         margin = list(b = 100))
+fig
+cat("Media: ",mean(citric.acid))
+cat("\nMediana: ",median(citric.acid))
+cat("\nModa: ",mfv(citric.acid))
+```
+
+##### Relación azúcar residual vs calidad (4)
+
+```{r}
+fig <- plot_ly(vino_blanco_data, x = ~quality, y = ~residual.sugar, type = 'box',
+               marker = list(color = 'purple'))
+fig <- fig %>%
+  layout(title = "Frecuencia del azúcar residual por calidad de vino",
+         xaxis = list(title = "Niveles de calidad"),
+         yaxis = list(title = "Azúcar residual",  tickvals = seq(min(vino_blanco_data$residual.sugar), max(vino_blanco_data$residual.sugar), by = 5)),
+         margin = list(b = 100))
+fig
+cat("Media: ",mean(residual.sugar))
+cat("\nMediana: ",median(residual.sugar))
+cat("\nModa: ",mfv(residual.sugar))
+```
+
+##### Relación Cloruro vs calidad (5)
+
+```{r}
+fig <- plot_ly(vino_blanco_data, x = ~quality, y = ~chlorides, type = 'box',
+               marker = list(color = 'purple'))
+fig <- fig %>%
+  layout(title = "Frecuencia del cloruro por calidad de vino",
+         xaxis = list(title = "Niveles de calidad"),
+         yaxis = list(title = "Cloruro",  tickvals = seq(min(vino_blanco_data$chlorides), max(vino_blanco_data$chlorides), by = 0.02)),
+         margin = list(b = 100))
+fig
+cat("Media: ",mean(chlorides))
+cat("\nMediana: ",median(chlorides))
+cat("\nModa: ",mfv(chlorides))
+```
+
+##### Dioxido de sulfuro libre vs calidad (6)
+
+```{r}
+fig <- plot_ly(vino_blanco_data, x = ~quality, y = ~free.sulfur.dioxide, type = 'box',
+               marker = list(color = 'purple'))
+fig <- fig %>%
+  layout(title = "Frecuencia de dioxido de sulfuro libre por calidad de vino",
+         xaxis = list(title = "Niveles de calidad"),
+         yaxis = list(title = "Dioxido de sulfuro libre",  tickvals = seq(min(vino_blanco_data$free.sulfur.dioxide), max(vino_blanco_data$free.sulfur.dioxide), by = 17)),
+         margin = list(b = 100))
+fig
+cat("Media: ",mean(free.sulfur.dioxide))
+cat("\nMediana: ",median(free.sulfur.dioxide))
+cat("\nModa: ",mfv(free.sulfur.dioxide))
+```
+
+##### Dioxido de sulfuro total vs calidad (7)
+
+```{r}
+fig <- plot_ly(vino_blanco_data, x = ~quality, y = ~total.sulfur.dioxide, type = 'box',
+               marker = list(color = 'purple'))
+fig <- fig %>%
+  layout(title = "Frecuencia de dioxido de sulfuro total por calidad de vino",
+         xaxis = list(title = "Niveles de calidad"),
+         yaxis = list(title = "Dioxido de sulfuro total",  tickvals = seq(min(vino_blanco_data$total.sulfur.dioxide), max(vino_blanco_data$total.sulfur.dioxide), by = 42.5)),
+         margin = list(b = 100))
+fig
+cat("Media: ",mean(total.sulfur.dioxide))
+cat("\nMediana: ",median(total.sulfur.dioxide))
+cat("\nModa: ",mfv(total.sulfur.dioxide))
+```
+
+##### Densidad vs calidad (8)
+
+```{r}
+fig <- plot_ly(vino_blanco_data, x = ~quality, y = ~density.vino, type = 'box',
+               marker = list(color = 'purple'))
+fig <- fig %>%
+  layout(title = "Frecuencia de la densidad por calidad de vino",
+         xaxis = list(title = "Niveles de calidad"),
+         yaxis = list(title = "Densidad",  tickvals = seq(min(vino_blanco_data$density), max(vino_blanco_data$density), by = 0.003)),
+         margin = list(b = 100))
+fig
+cat("Media: ",mean(density.vino))
+cat("\nMediana: ",median(density.vino))
+cat("\nModa: ",mfv(density.vino))
+```
+
+##### PH vs calidad (9)
+
+```{r}
+fig <- plot_ly(vino_blanco_data, x = ~quality, y = ~pH, type = 'box',
+               marker = list(color = 'purple'))
+fig <- fig %>%
+  layout(title = "Frecuencia del pHs únicos por calidad de vino",
+         xaxis = list(title = "Niveles de calidad"),
+         yaxis = list(title = "pH",  tickvals = seq(min(vino_blanco_data$pH), max(vino_blanco_data$pH), by = 0.15)),
+         margin = list(b = 100))
+fig
+cat("Media: ",mean(ph))
+cat("\nMediana: ",median(ph))
+cat("\nModa: ",mfv(ph))
+```
+
+##### Sulfato vs calidad (10)
+
+```{r}
+fig <- plot_ly(vino_blanco_data, x = ~quality, y = ~sulphates, type = 'box',
+               marker = list(color = 'purple'))
+fig <- fig %>%
+  layout(title = "Frecuencia de los niveles de sulfatos por calidad de vino",
+         xaxis = list(title = "Niveles de calidad"),
+         yaxis = list(title = "Sulfatos",  tickvals = seq(min(vino_blanco_data$sulphates), max(vino_blanco_data$sulphates), by = 0.11)),
+         margin = list(b = 100))
+fig
+cat("Media: ",mean(sulphates))
+cat("\nMediana: ",median(sulphates))
+cat("\nModa: ",mfv(sulphates))
+```
+
+##### Alcohol vs calidad (11)
+
+```{r}
+fig <- plot_ly(vino_blanco_data, x = ~quality, y = ~alcohol, type = 'box',
+               marker = list(color = 'purple'))
+fig <- fig %>%
+  layout(title = "Frecuencia de los grados de alcohol por calidad de vino",
+         xaxis = list(title = "Niveles de calidad"),
+         yaxis = list(title = "Alcohol",  tickvals = seq(min(vino_blanco_data$alcohol), max(vino_blanco_data$alcohol), by = 1.2)),
+         margin = list(b = 100))
+fig
+cat("Media: ",mean(alcohol))
+cat("\nMediana: ",median(alcohol))
+cat("\nModa: ",mfv(alcohol))
+```
+
+### Conclusión descriptiva de la relación de calidad frente las otras variables
+
+Para los gráficos anteriores se tomó la variable "quality" como una variable cualitativa-categórica (factor) debido a que se dividía en 6 niveles de calidad del 3 al 9. Teniendo esto en cuenta, se realizaron gráficos de cajas para un análisis descriptivo.
+
+Considerando las simetrías de los datos en cada gráfico, no existe una gran diferencia entre los componentes del vino blanco para los diferentes niveles. Se puede observar que las concentraciones de los datos en cada gráfico por nivel de calidad del vino son muy similares. Por ejemplo:
+
+En el gráfico 1, se puede ver que la frecuencia de acidez fija en cada vino es parecida. Analizando, por ejemplo, el cuartil 3, la mayoría de los datos están concentrados en los valores 6.8 y 7.8 de acidez fija. Los vinos de nivel 3 presentan una mayor variedad en este aspecto. Además, lo anterior se refleja de una manera muy similar (en cuanto a la simetría de los datos) en el gráfico 2.
+
+En el gráfico 3, la acidez cítrica de los diferentes niveles de vino es aún más parecida. Se observan concentraciones y simetrías de datos bastante similares, con valores centrales (cuartil 50) muy parecidos entre sí, promediando 0.3248571 (con un coeficiente de variación del 7.53%).
+
+```{r}
+datos <- c(0.354, 0.29, 0.32, 0.32, 0.31, 0.32, 0.36)
+media <- mean(datos)
+desviacion_estandar <- sd(datos)
+cv <- (desviacion_estandar / media) * 100
+cat("Media:", media, "\n")
+cat("Desviación estándar:", desviacion_estandar, "\n")
+cat("Coeficiente de variación de los valores centrales gráfico 3:", cv, "%\n")
+```
+
+Cada gráfico muestra una simetría de datos muy parecida dentro de rangos muy similares. Sin embargo, se encuentra una mayor diferencia en el gráfico número 5 con el vino de nivel 9, donde la concentración de los datos está por debajo de todos los cuartiles 1 de cada diagrama de caja asociado a cada nivel. Esto sugiere que los vinos del nivel 9 tienen una gran diferencia en la cantidad de cloruro con respecto a los otros niveles.

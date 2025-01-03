@@ -1,0 +1,426 @@
+---
+title: "repaso pep 3"
+author: "Fernando Carmona, Diego Abarca"
+date: "2024-12-20"
+output: html_document
+---
+
+```{r setup, message = FALSE}
+library(dplyr)
+library(ggpubr)
+library(plotly)
+library(kableExtra)
+library(summarytools)
+library(psych)
+library(DT)
+library(modeest)
+library("nortest")
+library(knitr)
+library("ggplot2")
+library("scales") #Arregla escalas
+library("gridExtra")
+```
+# *Repaso:*
+
+## 1.0 Recolección de datos (10 puntos). 
+
+Descargar los datos y combinar los archivos en un único csv. Definir y aplicar una estrategia para tratar los datos con valores faltantes, en caso de haber. Finalmente, guardar el archivo único en formato csv.
+
+```{r}
+# Lista los archivos en el directorio
+archivos = list.files("PROCESADOS/")
+datos = NULL
+
+
+# Cargar todos los archivos en un único csv
+for (a in 1:length(archivos))
+{
+  nombre_archivo = paste("PROCESADOS/",archivos[a], sep="")
+  datos = rbind(datos,read.csv(nombre_archivo,header = T))
+}
+
+# Guardar el dataframe unido en un archivo CSV
+write.csv(datos, "datos_unidos.csv", row.names = FALSE)
+
+# manera de trabajar los datos nulos -1 = sin grado
+datos$Grado <- ifelse(datos$Grado == "S/G", "no aplica", datos$Grado)
+
+n = nrow(datos)
+
+n
+
+```
+## 1.1 Organización y clasificación de los datos (10 puntos). 
+
+Utilizando el archivo csv único creado, generar una tabla que describa cualitativamente cada una de las variables, clasificándolas desde una perspectiva estadística.
+
+```{r}
+tabla_descriptiva <- data.frame("Variables" = c("Estamento", "Grado", "Titulo.Oficio", "Funcion.Cargo", "Unidad", "BrutoHaber"),
+                              "Descripción" = c(
+                                "Categoría o nivel de empleo del personal",
+                                "Posición que ocupa un(a) funcionario(a) público(a) en una institución gubernamental.",
+                                "Nivel de calificación o formación del funcionario o funcionaria",
+                                "Puesto o cargo ocupado por el funcionario o funcionaria",
+                                "Unidad en que trabaja el funcionario o funcionaria",
+                                "Remuneración total en pesos chilenos del funcionario o funcionaria"),
+                              "Tipo de variable" = c(
+                                "cualitativa: nominal politómica",
+                                "cualitativa: ordinal pólitomica",
+                                "cualitativa: nominal politómica",
+                                "cualitativa: nominal politómica",
+                                "cualitativa: nominal politómica",
+                                "cuantitativa: ratio discreta"
+                                ))
+  
+tabla <- kable(tabla_descriptiva , 
+               caption = "Tabla 1.- Tabla descriptiva ") %>%
+              kable_styling(full_width = F) %>%
+              column_spec(1, bold = T, border_right = T)
+tabla
+```
+
+## 1.3 Análisis descriptivo (25 puntos).
+Estudiar la distribución de frecuencia de las variables “Estamento”, “Unidad”, “Grado” y “Bruto Haber” (Remuneración).
+Utilizar gráficos o tablas para las variables cualitativas e histogramas para las variables cuantitativas.
+Si hay muchas categorías para las variables cualitativas, limítese a las 10 más frecuentes. En el caso de la remuneración, incluir el estudio de las medidas estadísticas.
+
+
+###1) histograma para graficar las frecuencias de remuneraciones en intervalos.
+
+Utilizaremos las siguientes formulas para sacar el tamaño de los intervalos:
+
+h = Rango/ Número de intervalos
+
+Rango = Máximo - min
+
+Regla de sturges.
+
+Número de intervalos = 1+3.222log(n)
+
+n = tamaño de la muestra
+
+```{r}
+Max = max(datos$BrutoHaber)
+
+Min = min(datos$BrutoHaber)
+
+Rango = Max - Min
+
+intervalos = 1 + 3.222*log10(5987)
+
+h =  Rango/intervalos
+```
+
+###Histograma para la variable BrutoHaber
+
+```{r}
+num_bins = 489769 #Quiebres
+g1 = ggplot(datos, aes(x = BrutoHaber)) +
+  geom_histogram(binwidth = num_bins, fill = "dodgerblue3",color="dodgerblue4",alpha=0.6) +
+  labs(title = "Histograma", x = "Remuneración en Millones de pesos", y = "Frecuencia")
+g1 = g1+theme_bw()
+g1 = g1 + scale_x_continuous(label = scales::comma) #Arregla la notación del eje x
+
+g1
+```
+Con plotly
+```{r}
+# Calcular el rango de los datos y determinar el ancho de los intervalos
+num_bins <- 13
+bin_width <- (max(datos$BrutoHaber, na.rm = TRUE) - min(datos$BrutoHaber, na.rm = TRUE)) / num_bins
+
+# Crear el histograma
+g1 <- plot_ly(
+  data = datos,
+  x = ~BrutoHaber,
+  type = "histogram",
+  xbins = list(
+    start = min(datos$BrutoHaber, na.rm = TRUE),
+    end = max(datos$BrutoHaber, na.rm = TRUE),
+    size = bin_width
+  ),
+  marker = list(
+    color = "dodgerblue3",
+    line = list(color = "dodgerblue4", width = 1)
+  ),
+  opacity = 0.6
+) %>%
+  layout(
+    title = "Histograma con 13 intervalos",
+    xaxis = list(
+      title = "Remuneración en Millones de pesos",
+      tickformat = ",", # Formato del eje x para números grandes
+      showgrid = TRUE
+    ),
+    yaxis = list(title = "Frecuencia"),
+    bargap = 0.1,
+    plot_bgcolor = "white"
+  )
+
+g1
+
+metricas = describe(datos$BrutoHaber,IQR=T,quant=c(.25,.50,.75))
+metricas
+```
+###Segundo grafico
+
+```{r}
+estamento = datos %>% count(Estamento)
+estamento = estamento[order(estamento$n,decreasing = T),]
+estamento=data.frame(estamento)
+
+# Convertir la columna 'Estamento' en un factor con el orden deseado
+estamento$Estamento <- factor(estamento$Estamento, levels = estamento$Estamento)
+
+fig2 <- plot_ly(estamento, x = ~estamento$Estamento, y = ~estamento$n, type = 'bar',
+               marker = list(color = 'skyblue'))
+fig2 <- fig2 %>%
+  layout(title = "Frecuencia por estamento",
+         xaxis = list(title = "Estamentos", tickangle = -45),
+         yaxis = list(title = "Frecuencia"),
+         margin = list(b = 100))  # Espacio adicional para etiquetas inclinadas
+fig2
+```
+###tercer grafico
+
+```{r}
+grado = datos %>% count(Grado)
+grado = grado[order(grado$n,decreasing = T),]
+grado=data.frame(grado)
+
+# Convertir la columna 'Estamento' en un factor con el orden deseado
+grado$Grado <- factor(grado$Grado, levels = grado$Grado)
+
+fig3 <- plot_ly(grado, x = ~grado$Grado, y = ~grado$n, type = 'bar',
+               marker = list(color = 'skyblue'))
+fig3 <- fig3 %>%
+  layout(title = "Frecuencia por grado",
+         xaxis = list(title = "Grado", tickangle = -45),
+         yaxis = list(title = "Frecuencia"),
+         margin = list(b = 100))  # Espacio adicional para etiquetas inclinadas
+fig3
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## 1° parte
+
+Sujeto al dataset ”Measuraments” (descripcion: https://jse.amstat.org/v11n2/datasets.heinz.html),
+
+### c)
+Variable seleccionada es chest depth (profundidad de pecho)
+
+La razón por la cual se selecionó la profundida del pecho, es que está medida se relaciona con el volumen corporal de una persona, lo cual esta bastante relacionado con el peso, además, en las formulas de peso corporal, una de las variables con mayor ponderación es el Chest Depth, teniendo una ponderación del 1.54.
+
+\[
+\text{Weight (kg)} = -110 + 1.34 \cdot \text{Chest Diameter} + 1.54 \cdot \text{Chest Depth} \\
++ 1.20 \cdot \text{Bitrochanteric Diameter} + 1.11 \cdot \text{Wrist Girth} \\
++ 1.15 \cdot \text{Ankle Girth} + 0.177 \cdot \text{Height}
+\]
+
+//```{r}
+medidasCorporales <- read.csv2("Measuraments.csv")
+
+medidasCorporalesH =  medidasCorporales[medidasCorporales$Gender == 1,]
+
+set.seed(7947) # Para reproducibilidad
+muestraMC <- medidasCorporalesH[sample(1:nrow(medidasCorporalesH), 100, replace = FALSE),  c(4, 23)]
+
+//```
+### d)
+Modelo de regresión
+
+//```{r}
+# Ajustar el modelo
+modelo <- lm( Weight ~ Chest.depth, data = muestraMC)
+
+# Resumen del modelo
+summary(modelo)
+//```
+### e)
+Grafico del modelo de regresión
+
+//```{r}
+# Crear el gráfico con ggplot2
+g11 <- ggplot(muestraMC, aes(x = Chest.depth, y = Weight)) +
+  geom_point(color = "black") +
+  geom_smooth(method = "lm", level = 0.95, color = "red", fill = "lightblue") +
+  theme_bw() +
+  ylab("Peso (kg)") +
+  xlab("Masa Corporal (cm)") +
+  theme(axis.text = element_text(size = 16),
+        axis.title.x = element_text(size = 14),
+        axis.title.y = element_text(size = 14))
+
+# Convertir el gráfico de ggplot2 a plotly
+fig <- ggplotly(g11)
+
+# Mostrar el gráfico interactivo
+fig
+
+//```
+### f) Interpretación
+
+Como se observa en la función summary, el $R^2$ está más cercano a 0 que a 1.
+Esto indica que la profundidad del pecho, al utilizar este modelo de una sola variable,
+no está tan estrechamente relacionada con el peso como se pensaba inicialmente.
+Por lo tanto, sería conveniente repetir este análisis utilizando una regresión lineal múltiple,
+incorporando otras variables como las mencionadas en la fórmula inicial o explorando nuevas variables para mejorar el ajuste del modelo. En el propio
+documento no basta una sola variable para predecir el peso por lo cual tiene sentido que solo la profundidad del pecho sea capaz de predecir el peso.
+
+## 2º Parte
+
+### a)
+Hipótesis nula: Hay menos atletas de raza oriental que redujerón sus mejores marcas en al menos 5,2 s que atletas de raza blanca que lo hicierón en al menos 2,8 s
+O matemáticamente: Ho = Qo((Td - Ta) >= 5,2s ) < Qb((Td - Ta) >= 2,8s)
+
+Hipótesis alternativa: No hay menos atletas de raza oriental que redujerón sus mejores marcas en al menos 5,2 s que atletas de raza blanca que lo hicierón en al menos 2,8 s
+O matemáticamente: Ha = Qo((Td - Ta) >= 5,2s ) >= Qb((Td - Ta) >= 2,8s)
+
+Td = Tiempo después del entrenamiento
+Ta = Tiempo antes del entrenamiento
+Qo = Cantidad de atletas de raza Oriental
+Qb = Cantidad de atletas de raza Blanca
+
+### b)
+
+Primero, tenemos que conseguir los datos a procesar,
+en este caso se pide la mejora debido al entrenamiento, por lo tanto,
+se requiere la diferencia en el tiempo de antes del entrenamiento con el tiempo de después.
+
+Para tener una visualización de los datos utilizaremos estadística descriptiva para ver
+la concentración de los datos según los tiempo de mejora para la raza blanca, y la raza
+oriental graficando los datos.
+
+Como estamos trabajando con dos muestras, se debe identificar la paridad de las muestras.
+
+Identificar las condiciones necesarias para ejecutar algún tipo de test para nuestro análisis.
+
+realizar el test adecuado.
+
+### c)
+
+Ahora para poder ejecutar el test adecuado, necesitamos saber la paridad del problema,
+la paridad se refiere a si los datos pueden haberse afectado entre ellos, en este caso,
+a menos que exista algún dato no dado, los dos tiempos no son pareadas, ya que se refieren
+a dos grupos de personas separados y sin ninguna relación entre ellos.
+
+Ahora vemos que tipo de test se puede hacer según el número de datos de éxito y fracaso, que debe ser
+como mínimo 10 para cada una en ambas muestras.
+
+Datos de los atletas orientales que si mejorarón sus tiempos en 5.2 segundos
+//```{r}
+atletas_data <- read.csv2("Atletas.csv")
+
+orientales <- atletas_data[atletas_data$Raza == "Oriental",]
+
+orientales$diferencia_tiempo <- orientales$Previo - orientales$Posterior
+
+orientalesM <- orientales[orientales$diferencia_tiempo >= 5.2,] #orientales que si mejorarón sus tiempos
+// ```
+
+Datos de los atletas de raza blanca que mejorarón sus tiempos en 2.8 segundos
+//```{r}
+blancos <- atletas_data[atletas_data$Raza == "Blanca",]
+
+blancos$diferencia_tiempo <- blancos$Previo - blancos$Posterior
+
+blancosM <- blancos[blancos$diferencia_tiempo >= 2.8,] #blancos que si mejorarón sus tiempos
+//```
+
+//```{r}
+datos_unidos <- rbind(orientales, blancos)
+
+fig <- plot_ly(datos_unidos, x = ~Raza, y = ~diferencia_tiempo, type = 'box')
+
+fig <- fig %>%
+  layout(title = "Mejoras del tiempo de atletas",
+         xaxis = list(title = "Raza", tickangle = 0),
+         yaxis = list(title = "Diferencia del tiempo"),
+         margin = list(b = 100))
+fig
+//```
+
+//```{r}
+# Calcular fracasos
+orientales_fracaso <- nrow(orientales) - nrow(orientalesM) #número de orientales que no mejorarón
+blancos_fracaso <- nrow(blancos) - nrow(blancosM) #número de orientales que no mejorarón
+
+# Calcular exitos
+orientales_exito = nrow(orientalesM)
+blancos_exito = nrow(blancosM)
+
+# Crear la tabla de contingencia
+tabla <- matrix(c(orientales_exito, orientales_fracaso, blancos_exito, blancos_fracaso), nrow = 2, byrow = TRUE)
+colnames(tabla) <- c("Éxito", "Fracaso")
+rownames(tabla) <- c("Orientales", "Blancos")
+
+kable(tabla, format = "html", caption = "Tabla de Contingencia") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = FALSE)
+//```
+Debido a que el número de éxitos de los atletas de raza orientales es menor a 10, al igual que el número de
+de fracasos de los atletas de raza blanca, por lo cuál no se puede realizar una prueba de proporciones,
+entonces se toma una alternativa, la prueba de fisher que se utiliza en muestras pequeñas.
+
+//```{r}
+# Prueba exacta de Fisher (si no se cumplen las condiciones)
+fisher.test(tabla, alternative = "greater")
+//```
+### d)
+
+Según los datos obtenidos por el test de fisher, obtuvimos un p value del 99,99%, por lo cual aceptamos
+la hipótesis nula de que la proporción de los atleta orientales que mejorarón sus tiempos por más 5.2
+segundos, es menor a la proporción de los atletas blancos que mejorarón sus tiempos por más de 2.8 segundos.
+Vale mencionar, que se descartarón muchos datos por las condiciones, así que para ver si esta relación
+se cumple de una manera más general, se recomienda usar condiciones de mejora de tiempo más similares.
+
+### 3º Parte
+
+### a) Intercepto
+El intercepto va a ser 0, si y solo sí, x e y, se intersectan en la coordenada (0,0); y esto pasa cuando en los valores inciales no existe nada más que interfiera, o sea, si cualquiera de las variables son 0, la otra también lo será, por ejemplo: si no invertimos en la promoción de un producto nadie lo va a comprar.
+Un intercepto 0 no es válido cuando la independiente no requiere de la variable dependiente para existir, o sea si x = 0, la independiente no necesariamente será 0, usando el mismo ejemplo anterior, si el producto es conocido de antes, probablemente igual alguien lo va comprar, sin necesidad de invertir en promociones.
+
+### b) $R^2$
+R en la regresión lineal, refiere a cuanto representa la línea creada a los puntos del gráfico, mientras que el $R^2$  representa que tan relacionada está la variable dependiente con la independiente, donde entre más cercano a 1, mayor la relación, y por tanto, un R^2 cercano a 0, significa que no existe mucha relación entre ambas variables, por lo que se puede verificar si hay alguna otra variable mejor para este caso, o se pueden evaluar más variables a la vez, o procesar las variables de alguna otra manera.

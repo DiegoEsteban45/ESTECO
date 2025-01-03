@@ -1,0 +1,28 @@
+---
+title: "pep 3"
+author: "Fernando Carmona, Diego Abarca"
+date: "2025-01-03"
+output: html_document
+---
+
+```{r setup, message = FALSE}
+library(dplyr)
+library(ggpubr)
+library(plotly)
+library(kableExtra)
+library(summarytools)
+library(psych)
+library(DT)
+library(modeest)
+library("nortest")
+library(knitr)
+library("ggplot2")
+library("scales") #Arregla escalas
+library("gridExtra")
+```
+# *Parte 1*
+
+
+
+
+

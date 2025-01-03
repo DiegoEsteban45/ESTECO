@@ -1,0 +1,113 @@
+---
+title: "Tarea 6 "
+author: "Diego Abarca, Fernando Carmona"
+date: "2024-12-4"
+output: html_document
+---
+```{r setup, message = FALSE}
+library(ggpubr)
+library("BSDA")
+```
+
+# *tarea 6:*
+
+### a) Defina las hipótesis a contrastar.
+
+Como la hipótesis planteada es que el mejor tiempo medio de los atletas de raza oriental antes de ingresar al programa de entrenamiento era de 19,4 segundos.
+Ho = 19.4seg
+
+La hipótesis alternativa será que el mejor tiempo medio de los atletas de raza oriental antes del programa, no es igual a 19,4 segundos.
+Ha != 19.4 seg
+
+```{r}
+Test_Velocidad_Oriental <- read.csv2("data.csv")
+
+Test_Velocidad_Oriental =  Test_Velocidad_Oriental[Test_Velocidad_Oriental$Raza =="Oriental",]
+
+AntesDelEntrenamiento = Test_Velocidad_Oriental[,3]
+
+```
+### b) Proponga un procedimiento adecuado para el análisis.
+Primero analizar que tipo de test es el adecuado para analizar la vericidad de la afirmación que se muestra en el enucniado.
+para eso primero analizamos los datos que tenemos:
+
+#### 1) Análisis de la distribución de los datos
+El primer paso es determinar qué tipo de distribución siguen los datos del conjunto de datos denominado "Test_Velocidad_Oriental". Para ello, aplicamos el test de Shapiro-Wilk (shapiro.test) y complementamos el análisis con la visualización generada por un QQ-plot.
+
+```{r}
+v.test <- shapiro.test(AntesDelEntrenamiento)
+v.test
+```
+El valor del p-value resultante es mayor a 0.05, lo que sugiere que los datos siguen probablemente una distribución normal. El test de Shapiro-Wilk evalúa la hipótesis nula de que los datos provienen de una distribución normal, y dado que no rechazamos esta hipótesis, concluimos que la distribución es probablemente normal. Esta conclusión se refuerza aún más con la gráfica generada a continuación.
+
+```{r}
+# QQ-plot
+qqnorm(AntesDelEntrenamiento)
+qqline(AntesDelEntrenamiento, col = "red")  # Agregar la línea de referencia
+
+```
+
+Como se puede observar, los puntos en el gráfico siguen una línea de tendencia recta, lo que hace más probable que los datos sigan una distribución normal.
+
+#### 2) Tamaño de la muestra y conocimiento sobre la varianza
+
+El siguiente paso es verificar el tamaño de la muestra y determinar si conocemos la varianza poblacional o muestral. En este caso, sabemos que la muestra tiene menos de 30 datos y que se conoce la varianza poblacional.
+
+#### Conclusión del análisis
+Con estos análisis en mano, podemos concluir que el test adecuado para analizar la veracidad de la afirmación es el Z-test. Esto es posible porque cumplimos con todas las condiciones necesarias: la muestra es pequeña (menos de 30 datos), conocemos la varianza poblacional y los datos siguen una distribución normal.
+
+
+### C) Verifique las condiciones necesarias del procedimiento y ejecútelo.
+
+#### Datos:
+\( \tilde{X} \) = 19.4
+
+μ = ¿?
+
+σ = \( \sqrt{4} \)
+
+n = 27 
+
+```{r}
+velocidad.z <- z.test(x = AntesDelEntrenamiento, mu = 19.4, sigma.x = 2)
+velocidad.z
+```
+
+Obtuvimos que el promedio (μ) es distinto de 19,4
+
+μ = 19.64981
+
+### D) Interprete los resultados obtenidos en el contexto del problema.
+
+El intervalo de confianza es:
+
+```{r}
+MediaMuestral = 19.64981
+
+Z_alpha_2 = 1.96
+
+SD = 2
+
+n = 27
+
+IC1 = MediaMuestral + Z_alpha_2*(SD/sqrt(n))
+
+IC2 = MediaMuestral - Z_alpha_2*(SD/sqrt(n))
+
+cat("El intervalo de confianza es: [", IC2,",",IC1,"]")
+
+```
+
+### E)
+
+Como obtuvimos que el promedio (μ) es distinto de 19.4, pero la diferencia esta dentro del intervalo de confianza, por tanto, aceptamos
+la hipótesis nula. Sabiendo que el promedio real (μ) es igual a 19.64, lo que cae dentro del intervalo de confianza, podemos
+concluir que el promedio es igual a 19.4 con un intervalo de confianza de 95% por tanto se trata como verdadera la afirmación del comité olímpico.
+
+
+
+
+
+
+
+ 
