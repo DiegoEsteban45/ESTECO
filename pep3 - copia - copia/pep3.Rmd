@@ -1,0 +1,765 @@
+---
+title: "pep 3"
+author: "Fernando Carmona, Diego Abarca"
+date: "2025-01-03"
+output: html_document
+---
+
+```{r setup, message = FALSE}
+library(dplyr)
+library(ggpubr)
+library(plotly)
+library(kableExtra)
+library(summarytools)
+library(psych)
+library(DT)
+library(modeest)
+library("nortest")
+library(knitr)
+library("ggplot2")
+library("scales") #Arregla escalas
+library("gridExtra")
+```
+# *Pregunta 1*
+Seleccione una enfermedad de su interés del conjunto de datos y,
+utilizando documentación científica disponible en el sitio de la biblioteca de nuestra universidad,
+elabore una breve descripción en un único párrafo de no más de 200 palabras. En esta descripción,
+incluya las características principales de la enfermedad, su impacto en los/las pacientes y las razones,
+ya sean personales o académicas, por las cuales decidió seleccionarla.
+Además, analice la frecuencia de esta enfermedad en el conjunto de datos,
+especificando la proporción de pacientes afectados respecto al total de encuestados.
+Por último, incluya al menos dos referencias en formato APA para respaldar la información presentada.
+
+### Enfermedada seleccionado: (v15)
+
+*lupus eritematoso sistémico (systemic lupus erythematosus, LE): (V15)*
+
+Es una enfermedad autoinmunitaria en la que los órganos, tejidos y células se dañan por adherencia de
+diversos autoanticuerpos y complejos inmunitarios. Es decir, el sistema inmune daña del tejido sano debido
+a que no lo "reconoce". Una de las razones comunes por la cual se obtiene este enfermedad es debido a la radiación de la
+luz ultravioleta, la cual provoca axacervación en el 70% de los pacientes dañando las celulas debido a la alteración del
+DNA y las proteínas intracelulares lo cual provoca que se tornen atigénicas. Factores como heredación genetica son importantes
+a tener en cuenta para diversas enfermedades, sin embargo, para esta en concreto no es un factor realmente importante. El factor
+más importante a tener en cuenta para esta enfermedad es la fotosensibilidad derivada del ambiente.
+
+*Revista de Medicina e Investigación. (2013). https://core.ac.uk/download/pdf/55531922.pdf#page=12, Vol. 1(Núm. 1).*
+
+La razón por la cual se seleccionó es debido a la curiosidad ya que, es la
+enfermedad con mayor frecuencia, y según lo brevemente investigado es una enfermedad
+que encontramos que es bastante seria.
+
+```{r}
+data <- read.csv("Resultados encuesta anonimizados_v2.xlsx - DB.csv")
+
+enfermedad8 = data[data$V8 == "SI",]
+enfermedad9 = data[data$V9 == "SI",]
+enfermedad10 = data[data$V10 == "SI",]
+enfermedad11 = data[data$V11 == "SI",]
+enfermedad12 = data[data$V12 == "SI",]
+enfermedad13 = data[data$V13 == "SI",]
+enfermedad14 = data[data$V14 == "SI",]
+enfermedad15 = data[data$V15 == "SI",]
+enfermedad16 = data[data$V16 == "SI",]
+enfermedad17 = data[data$V17 == "SI",]
+enfermedad18 = data[data$V18 == "SI",]
+enfermedad19 = data[data$V19 == "SI",]
+enfermedad20 = data[data$V20 == "SI",]
+enfermedad21 = data[data$V21 == "SI",]
+enfermedad22 = data[data$V22 == "SI",]
+
+total = nrow(data)
+v8 = nrow(enfermedad8)
+v9 = nrow(enfermedad9)
+v10 = nrow(enfermedad10)
+v11 = nrow(enfermedad11)
+v12 = nrow(enfermedad12)
+v13 = nrow(enfermedad13)
+v14 = nrow(enfermedad14)
+v15 = nrow(enfermedad15)
+v16 = nrow(enfermedad16)
+v17 = nrow(enfermedad17)
+v18 = nrow(enfermedad18)
+v19 = nrow(enfermedad19)
+v20 = nrow(enfermedad20)
+v21 = nrow(enfermedad21)
+v22 = nrow(enfermedad22)
+
+
+enfermedades <- c("Artritis Idiopática Juvenil",
+                    "Artritis Psoriática",
+                    "Artritis Reumatoidea",
+                    "Artrosis",
+                    "Esclerodermia",
+                    "Espondilitis",
+                    "Fibromialgia",
+                    "Lupus Eritematoso Sistémico",
+                    "Miositis (Dermatomiositis, Polimiositis)",
+                    "Síndrome de Raynaud",
+                    "Síndrome de Sjögren",
+                    "Síndrome de Vogt Koyanagi Harada",
+                    "Uveítis",
+                    "Vasculitis",
+                    "Otra enfermedad reumática")
+
+n_enfermedades <- c(v8, v9, v10, v11, v12,
+                 v13, v14, v15, v16, v17,
+                 v18, v19, v20, v21, v22)
+
+data_enfermedad <- data.frame(enfermedad = enfermedades, number_of_yes = n_enfermedades)
+
+fig <- plot_ly(data_enfermedad, x = ~enfermedad, y = ~number_of_yes, type = 'bar',
+               marker = list(color = 'skyblue'))
+
+fig <- fig %>%
+  layout(title = "Número de personas afectadas por enfermedad",
+         xaxis = list(title = "Tipo de enfermedad", tickangle = -45),
+         yaxis = list(title = "Personas afectadas"),
+         margin = list(b = 100))  # Espacio adicional para etiquetas inclinadas
+fig
+```
+
+```{r}
+v15
+total
+
+porcentaje = v15/total
+porcentaje
+```
+
+# *Pregunta 2*
+Realice un análisis estadístico para identificar las 10 principales variables asociadas o no asociadas con la enfermedad seleccionada.
+Antes de aplicar las pruebas de contraste de hipótesis, evalúe cuidadosamente los tipos de variables involucradas y justifique de manera
+clara la selección de la prueba estadística utilizada. Especifique el nivel de confianza aplicado en el análisis y explique el criterio
+utilizado para ordenar las variables independientes según su relación con la enfermedad. Incluya un análisis descriptivo previo que
+detalle las características de las variables seleccionadas y proporcione una base sólida para interpretar los resultados.
+
+## Variable género
+Escogimos el género de los encuestados por que, es de interés saber si esta enfermedad afectá
+a cierto género más que a otro.
+
+```{r}
+enfermedad15_hombres =  enfermedad15[enfermedad15$V1 == "Masculino", ]
+enfermedad15_mujeres =  enfermedad15[enfermedad15$V1 == "Femenino", ]
+enfermedad15_otros =  enfermedad15[enfermedad15$V1 == "Otro", ]
+
+hombres = nrow(enfermedad15_hombres)
+mujeres = nrow(enfermedad15_mujeres)
+otros = nrow(enfermedad15_otros)
+
+genero <- c("Masculino", "Femenino", "Otro")
+
+n_afectado <- c(hombres, mujeres, otros)
+
+data_enfermedad15_genero <- data.frame(genero = genero, numero = n_afectado)
+
+fig2 <- plot_ly(data_enfermedad15_genero, x = ~genero, y = ~numero, type = 'bar',
+               marker = list(color = 'skyblue'))
+
+fig2 <- fig2 %>%
+  layout(title = "Género de personas afectadas por la enfermedad",
+         xaxis = list(title = "Género", tickangle = -45),
+         yaxis = list(title = "Personas afectadas"),
+         margin = list(b = 100))  # Espacio adicional para etiquetas inclinadas
+fig2
+```
+
+Como se observa en el grafico hay una gran diferencia en los géneros afectados, por lo tanto
+nuestra hipótesis nula es: No existe una correlación entre la enfermedad y el género del entrevistado
+que la posee. Y nuestra hipótesis alternativa sería que si existe una relación.
+
+Ho: No existe una correlación entre la enfermedad y el género.
+Ha: Si existe una relación entre la enfermedad y el género.
+
+Se realizará una prueba de contraste de 2 muestras de proporciones,
+no pareadas, es decir, ambas muestras no se afectán una de las otras,
+utilizando el chisquare test, el cual es adecuado para este tipo de pruebas en donde se quiere
+evaluar la relación entre variables no paramétricas categóricas dicotómicas.
+
+```{r}
+enfermedad15_no = data[data$V15 == "NO",]
+enfermedad15_hombres_no =  enfermedad15_no[enfermedad15_no$V1 == "Masculino", ]
+enfermedad15_mujeres_no =  enfermedad15_no[enfermedad15_no$V1 == "Femenino", ]
+
+num_enf15_h_no = nrow(enfermedad15_hombres_no)
+num_enf15_m_no = nrow(enfermedad15_mujeres_no)
+
+tabla <- matrix(c(hombres, num_enf15_h_no, mujeres, num_enf15_m_no), nrow = 2, byrow = TRUE)
+
+rownames(tabla) <- c("Hombre", "Mujer")
+
+colnames(tabla) <- c("Enfermedad presente", "Enfermedad ausente")
+
+kable(tabla, format = "html", caption = "Tabla de Contingencia") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = FALSE)
+
+chisq.test(tabla)
+```
+
+Como resultado del test teniendo un p-value < 0.05, y considerando un nivel de
+confianza del 95%, rechazamos la hipótesis nula y aceptamos la hipótesis alternativa concluyendo
+que si existe una correlación, según la base de datos trabajada.
+
+## Variable enfermedades
+
+Las enfermedades con mayor frecuencia que se tienen cuando el entrevistado presenta
+lupus eritematoso sistémico
+```{r}
+enfermedad8_15 = enfermedad15[enfermedad15$V8 == "SI",]
+enfermedad9_15 = enfermedad15[enfermedad15$V9 == "SI",]
+enfermedad10_15 = enfermedad15[enfermedad15$V10 == "SI",]
+enfermedad11_15 = enfermedad15[enfermedad15$V11 == "SI",]
+enfermedad12_15 = enfermedad15[enfermedad15$V12 == "SI",]
+enfermedad13_15 = enfermedad15[enfermedad15$V13 == "SI",]
+enfermedad14_15 = enfermedad15[enfermedad15$V14 == "SI",]
+enfermedad16_15 = enfermedad15[enfermedad15$V16 == "SI",]
+enfermedad17_15 = enfermedad15[enfermedad15$V17 == "SI",]
+enfermedad18_15 = enfermedad15[enfermedad15$V18 == "SI",]
+enfermedad19_15 = enfermedad15[enfermedad15$V19 == "SI",]
+enfermedad20_15 = enfermedad15[enfermedad15$V20 == "SI",]
+enfermedad21_15 = enfermedad15[enfermedad15$V21 == "SI",]
+enfermedad22_15 = enfermedad15[enfermedad15$V22 == "SI",]
+
+total = nrow(data)
+v8_15 = nrow(enfermedad8_15)
+v9_15 = nrow(enfermedad9_15)
+v10_15 = nrow(enfermedad10_15)
+v11_15 = nrow(enfermedad11_15)
+v12_15 = nrow(enfermedad12_15)
+v13_15 = nrow(enfermedad13_15)
+v14_15 = nrow(enfermedad14_15)
+v16_15 = nrow(enfermedad16_15)
+v17_15 = nrow(enfermedad17_15)
+v18_15 = nrow(enfermedad18_15)
+v19_15 = nrow(enfermedad19_15)
+v20_15 = nrow(enfermedad20_15)
+v21_15 = nrow(enfermedad21_15)
+v22_15 = nrow(enfermedad22_15)
+
+enfermedades_15 <- c("Artritis Idiopática Juvenil",
+                    "Artritis Psoriática",
+                    "Artritis Reumatoidea",
+                    "Artrosis",
+                    "Esclerodermia",
+                    "Espondilitis",
+                    "Fibromialgia",
+                    "Miositis (Dermatomiositis, Polimiositis)",
+                    "Síndrome de Raynaud",
+                    "Síndrome de Sjögren",
+                    "Síndrome de Vogt Koyanagi Harada",
+                    "Uveítis",
+                    "Vasculitis",
+                    "Otra enfermedad reumática")
+
+n_enfermedades_15 <- c(v8_15, v9_15, v10_15, v11_15, v12_15,
+                 v13_15, v14_15, v16_15, v17_15,
+                 v18_15, v19_15, v20_15, v21_15, v22_15)
+
+data_enfermedad_15 <- data.frame(enfermedad = enfermedades_15, number_of_yes = n_enfermedades_15)
+
+fig3 <- plot_ly(data_enfermedad_15, x = ~enfermedad, y = ~number_of_yes, type = 'bar',
+               marker = list(color = 'skyblue'))
+
+fig3 <- fig3 %>%
+  layout(title = "Número de personas afectadas por enfermedad",
+         xaxis = list(title = "Tipo de enfermedad", tickangle = -45),
+         yaxis = list(title = "Personas afectadas"),
+         margin = list(b = 100))  # Espacio adicional para etiquetas inclinadas
+fig3
+```
+Como se puede observar en el gráfico, de las enfermedades en conjunto que se tienen junto con la enfermedad seleccionada,
+la con mayor frecuencia es Síndrome de Sjögren. Por lo tanto, a continuación se estudiará si al tener Síndrome de Sjögren es
+altamente probable que se tenga la enfermedad estudiada. Es decir, si existe una relación o dependencia que al tener Síndrome de Sjögren
+es altamente probable tener Lupus Eritematoso Sistémico.
+
+Para el siguiente estudio en donde queremos ver si los visto de forma descriptiva tienen sentido
+se realizara el estudio inferencial en donde se estudiará si ambas enfermedades están relacionadas entre si, para eso
+el test más adecuado en este caso al tener variables no parametricas seriá el chi square test con dos muestras.
+
+La hipótesis nula a evaluar realizando el chi square test seria que ambas enfermedades no están significativamente
+relacionadas entre si, y la hipótesis alternativa es que si están relacionada entre si.
+
+Ho: No hay una relación significativa entre las dos enfermedades.
+Ha: Hay una relación significativa entre las dos variables.
+
+```{r}
+Grupo1 = data[data$V18 == "SI" & data$V15 == "SI",]  # Ambas enfermedades
+Grupo2 = data[data$V18 == "NO" & data$V15 == "SI",]  # solo con la enfermedad v15 sin v18
+Grupo3 = data[data$V18 == "SI" & data$V15 == "NO",]  # solo con la enfermedad v18 sin v15
+Grupo4 = data[data$V18 == "NO" & data$V15 == "NO",]  # sin guna de las dos enfermedades
+
+Grupo1 = nrow(Grupo1)
+Grupo2 = nrow(Grupo2)
+Grupo3 = nrow(Grupo3)
+Grupo4 = nrow(Grupo4)
+
+tabla3 <- matrix(c(Grupo1, Grupo2, Grupo3, Grupo4), nrow = 2, byrow = TRUE)
+
+# Asignar nombres a las filas y columnas
+rownames(tabla3) <- c("Lupus Eritematoso Sistémico presente", "Lupus Eritematoso Sistémico ausente")
+colnames(tabla3) <- c("Síndrome de Sjögren presente", "Síndrome de Sjögren ausente")
+
+kable(tabla3, format = "html", caption = "Tabla de Contingencia") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = FALSE)
+
+chisq.test(tabla3)
+```
+Como resultado del test el es que el p-value > 0.05, y considerando un nivel de confianza del 95%.
+se obtiene que no se tiene suficiente evidencia para rechazar la hipótesis nula. Por lo tanto no se pude
+concluir que la presencia del Síndrome de Sjögren influya en la presencia de Lupus Eritematoso Sistémico
+
+## Variable edad
+
+Se estudiara la edad de los entrevistados afectados para ver si esta enfermedad afecta más
+a personas de cierto grupo de edad
+
+```{r}
+enfermedad15_menor15 =  enfermedad15[enfermedad15$V2 == "0 a 15 años", ]
+enfermedad15_menor18 =  enfermedad15[enfermedad15$V2 == "16 a 18 años", ]
+enfermedad15_menor30 =  enfermedad15[enfermedad15$V2 == "19 a 30 años", ]
+enfermedad15_menor45 =  enfermedad15[enfermedad15$V2 == "31 a 45 años", ]
+enfermedad15_menor60 =  enfermedad15[enfermedad15$V2 == "45 a 60 años", ]
+enfermedad15_mayor60 =  enfermedad15[enfermedad15$V2 == "más de 60 años", ]
+
+menor15 = nrow(enfermedad15_menor15)
+menor18 = nrow(enfermedad15_menor18)
+menor30 = nrow(enfermedad15_menor30)
+menor45 = nrow(enfermedad15_menor45)
+menor60 = nrow(enfermedad15_menor60)
+mayor60 = nrow(enfermedad15_mayor60)
+
+edad <- c("0 a 15 años", "16 a 18 años", "19 a 30 años", "31 a 45 años", "45 a 60 años",
+            "más de 60 años")
+
+edad_afectado <- c(menor15, menor18, menor30, menor45, menor60, mayor60)
+
+data_enfermedad15_edad <- data.frame(edad = edad, numero = edad_afectado)
+
+fig4 <- plot_ly(data_enfermedad15_edad, x = ~edad, y = ~numero, type = 'bar',
+               marker = list(color = 'skyblue'))
+
+fig4 <- fig4 %>%
+  layout(title = "Género de personas afectadas por la enfermedad",
+         xaxis = list(title = "Edad", tickangle = -45),
+         yaxis = list(title = "Personas afectadas"),
+         margin = list(b = 100))  # Espacio adicional para etiquetas inclinadas
+fig4
+```
+Como se observa en el grafico hay una gran diferencia en las edades de los afectados, por lo tanto,
+nuestra hipótesis nula será: No existe una correlación entre la enfermedad y la edad del entrevistado
+que la posee. Y nuestra hipótesis alternativa sería que si existe una relación.
+
+Ho: No existe una correlación entre la enfermedad y la edad.
+Ha: Si existe una relación entre la enfermedad y la edad.
+
+Para el estudio de relación, se va a considerar el rango de edades de entre 0 a 30 años, y
+de 30 años en adelante. Se utilizará una prueba de contraste de 2 muestras, no pareadas,
+dado que los grupos son separados entre sí, por lo cual, se requerirá el test chisquare,
+el cual es adecuado para este tipo de pruebas en donde se quiere evaluar la relación entre
+variables no paramétricas categóricas dicotómicas.
+
+```{r}
+enfermedad15_no_menor15 =  enfermedad15_no[enfermedad15_no$V2 == "0 a 15 años", ]
+enfermedad15_no_menor18 =  enfermedad15_no[enfermedad15_no$V2 == "16 a 18 años", ]
+enfermedad15_no_menor30 =  enfermedad15_no[enfermedad15_no$V2 == "19 a 30 años", ]
+enfermedad15_no_menor45 =  enfermedad15_no[enfermedad15_no$V2 == "31 a 45 años", ]
+enfermedad15_no_menor60 =  enfermedad15_no[enfermedad15_no$V2 == "45 a 60 años", ]
+enfermedad15_no_mayor60 =  enfermedad15_no[enfermedad15_no$V2 == "más de 60 años", ]
+
+menor15_no = nrow(enfermedad15_no_menor15)
+menor18_no = nrow(enfermedad15_no_menor18)
+menor30_no = nrow(enfermedad15_no_menor30)
+menor45_no = nrow(enfermedad15_no_menor45)
+menor60_no = nrow(enfermedad15_no_menor60)
+mayor60_no = nrow(enfermedad15_no_mayor60)
+
+entre_0_30 = menor15 + menor18 + menor30
+entre_0_30_no = menor15_no + menor18_no + menor30_no
+entre_30_100 = menor45 + menor60 + mayor60
+entre_30_100_no = menor45_no + menor60_no + mayor60_no
+
+tabla4 <- matrix(c(entre_0_30, entre_0_30_no, entre_30_100, entre_30_100_no), nrow = 2, byrow = TRUE)
+
+rownames(tabla4) <- c("Entre 0 a 30 años", "De 30 años en adelante")
+
+colnames(tabla4) <- c("Enfermedad presente", "Enfermedad ausente")
+
+kable(tabla4, format = "html", caption = "Tabla de Contingencia") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = FALSE)
+
+chisq.test(tabla4)
+```
+Como resultado del test teniendo un p-value < 0.05, y considerando un nivel de confianza del
+95%, rechazamos la hipótesis nula y aceptamos la hipótesis alternativa concluyendo
+que si existe una correlación, entre la edad y el padecer Lupus Eritematoso Sistémico.
+
+## Variable Región de residencia
+Se estudiara la región de residencia de los entrevistados afectados para ver si esta enfermedad
+afecta más a personas de cierta región.
+
+```{r}
+enfermedad15_Arica =  enfermedad15[enfermedad15$V4 == "de Arica y Parinacota", ]
+enfermedad15_Tarapaca =  enfermedad15[enfermedad15$V4 == "de Tarapacá", ]
+enfermedad15_Antofagasta =  enfermedad15[enfermedad15$V4 == "de Antofagasta", ]
+enfermedad15_Atacama =  enfermedad15[enfermedad15$V4 == "de Atacama", ]
+enfermedad15_Coquimbo =  enfermedad15[enfermedad15$V4 == "de Coquimbo", ]
+enfermedad15_Valpo =  enfermedad15[enfermedad15$V4 == "de Valparaíso", ]
+enfermedad15_Metro =  enfermedad15[enfermedad15$V4 == "Metropolitana de Santiago", ]
+enfermedad15_Bernardo =  enfermedad15[enfermedad15$V4 == "del Libertador Bernardo O'Higgins", ]
+enfermedad15_Maule =  enfermedad15[enfermedad15$V4 == "del Maule", ]
+enfermedad15_Ñuble =  enfermedad15[enfermedad15$V4 == "de Ñuble", ]
+enfermedad15_Biobio =  enfermedad15[enfermedad15$V4 == "del Biobío", ]
+enfermedad15_Arauco =  enfermedad15[enfermedad15$V4 == "de la Araucanía", ]
+enfermedad15_Rios =  enfermedad15[enfermedad15$V4 == "de Los Ríos", ]
+enfermedad15_Lagos =  enfermedad15[enfermedad15$V4 == "de Los Lagos", ]
+enfermedad15_Aysen =  enfermedad15[enfermedad15$V4 == "de Aysén del General Carlos Ibañez del Campo", ]
+enfermedad15_Magallanes =  enfermedad15[enfermedad15$V4 == "de Magallanes y la Antártica Chilena", ]
+enfermedad15_Otra =  enfermedad15[enfermedad15$V4 == "Otra", ]
+
+Arica = nrow(enfermedad15_Arica)
+Tarapaca = nrow(enfermedad15_Tarapaca)
+Antofagasta = nrow(enfermedad15_Antofagasta)
+Atacama = nrow(enfermedad15_Atacama)
+Coquimbo = nrow(enfermedad15_Coquimbo)
+Valpo = nrow(enfermedad15_Valpo)
+Metro = nrow(enfermedad15_Metro)
+Bernardo = nrow(enfermedad15_Bernardo)
+Maule = nrow(enfermedad15_Maule)
+Ñuble = nrow(enfermedad15_Ñuble)
+Biobio = nrow(enfermedad15_Biobio)
+Arauco = nrow(enfermedad15_Arauco)
+Rios = nrow(enfermedad15_Rios)
+Lagos = nrow(enfermedad15_Lagos)
+Aysen = nrow(enfermedad15_Aysen)
+Magallanes = nrow(enfermedad15_Magallanes)
+Otra = nrow(enfermedad15_Otra)
+
+Regiones <- c(
+  "Arica y Parinacota",
+  "Tarapacá",
+  "Antofagasta",
+  "Atacama",
+  "Coquimbo",
+  "Valparaíso",
+  "Metropolitana de Santiago",
+  "Libertador Bernardo O'Higgins",
+  "Maule",
+  "Ñuble",
+  "Biobío",
+  "Araucanía",
+  "Los Ríos",
+  "Los Lagos",
+  "Aysén del General Carlos Ibañez del Campo",
+  "Magallanes y la Antártica Chilena",
+  "Otra"
+)
+
+Conteos <- c(Arica, Tarapaca, Antofagasta, Atacama, Coquimbo, Valpo, Metro, Bernardo, Maule,
+                Ñuble, Biobio, Arauco, Rios, Lagos, Aysen, Magallanes, Otra)
+
+data_Regiones <- data.frame(region = Regiones, conteo = Conteos)
+
+fig5 <- plot_ly(data_Regiones, x = ~region, y = ~conteo, type = 'bar',
+               marker = list(color = 'skyblue'))
+
+fig5 <- fig5 %>%
+  layout(title = "Regiones de los afectados",
+         xaxis = list(title = "Regiones", tickangle = -45),
+         yaxis = list(title = "Personas afectadas"),
+         margin = list(b = 100))  # Espacio adicional para etiquetas inclinadas
+fig5
+
+```
+Como se observa en el grafico hay una diferencia de las regiones de los afectados, la mayoría,
+centrado en la región Metropolitana, por lo tanto, nuestra hipótesis nula será:
+No existe una correlación entre la enfermedad y la región de residencia del entrevistado
+que la posee. Y nuestra hipótesis alternativa sería que si existe una relación.
+
+Ho: No existe una correlación entre la enfermedad y la región de residencia.
+Ha: Si existe una relación entre la enfermedad y la región de residencia.
+
+Para el estudio de relación, se va a considerar la región Metropolitana y el resto,
+esto debido a que, la mayoría de entrevistados provienen de está región.
+Se utilizará una prueba de contraste de 2 muestras, no pareadas,
+dado que los grupos son separados entre sí, por lo cual, se requerirá el test chisquare,
+el cual es adecuado para este tipo de pruebas en donde se quiere evaluar la relación entre
+variables no paramétricas categóricas dicotómicas.
+
+```{r}
+enfermedad15_no_Arica = enfermedad15_no[enfermedad15_no$V4 == "de Arica y Parinacota", ]
+enfermedad15_no_Tarapaca = enfermedad15_no[enfermedad15_no$V4 == "de Tarapacá", ]
+enfermedad15_no_Antofagasta = enfermedad15_no[enfermedad15_no$V4 == "de Antofagasta", ]
+enfermedad15_no_Atacama = enfermedad15_no[enfermedad15_no$V4 == "de Atacama", ]
+enfermedad15_no_Coquimbo = enfermedad15_no[enfermedad15_no$V4 == "de Coquimbo", ]
+enfermedad15_no_Valpo = enfermedad15_no[enfermedad15_no$V4 == "de Valparaíso", ]
+enfermedad15_no_Metro = enfermedad15_no[enfermedad15_no$V4 == "Metropolitana de Santiago", ]
+enfermedad15_no_Bernardo = enfermedad15_no[enfermedad15_no$V4 == "del Libertador Bernardo O'Higgins", ]
+enfermedad15_no_Maule = enfermedad15_no[enfermedad15_no$V4 == "del Maule", ]
+enfermedad15_no_Ñuble = enfermedad15_no[enfermedad15_no$V4 == "de Ñuble", ]
+enfermedad15_no_Biobio = enfermedad15_no[enfermedad15_no$V4 == "del Biobío", ]
+enfermedad15_no_Arauco = enfermedad15_no[enfermedad15_no$V4 == "de la Araucanía", ]
+enfermedad15_no_Rios = enfermedad15_no[enfermedad15_no$V4 == "de Los Ríos", ]
+enfermedad15_no_Lagos = enfermedad15_no[enfermedad15_no$V4 == "de Los Lagos", ]
+enfermedad15_no_Aysen = enfermedad15_no[enfermedad15_no$V4 == "de Aysén del General Carlos Ibañez del Campo", ]
+enfermedad15_no_Magallanes = enfermedad15_no[enfermedad15_no$V4 == "de Magallanes y la Antártica Chilena", ]
+enfermedad15_no_Otra = enfermedad15_no[enfermedad15_no$V4 == "Otra", ]
+
+no_Arica = nrow(enfermedad15_no_Arica)
+no_Tarapaca = nrow(enfermedad15_no_Tarapaca)
+no_Antofagasta = nrow(enfermedad15_no_Antofagasta)
+no_Atacama = nrow(enfermedad15_no_Atacama)
+no_Coquimbo = nrow(enfermedad15_no_Coquimbo)
+no_Valpo = nrow(enfermedad15_no_Valpo)
+no_Metro = nrow(enfermedad15_no_Metro)
+no_Bernardo = nrow(enfermedad15_no_Bernardo)
+no_Maule = nrow(enfermedad15_no_Maule)
+no_Ñuble = nrow(enfermedad15_no_Ñuble)
+no_Biobio = nrow(enfermedad15_no_Biobio)
+no_Arauco = nrow(enfermedad15_no_Arauco)
+no_Rios = nrow(enfermedad15_no_Rios)
+no_Lagos = nrow(enfermedad15_no_Lagos)
+no_Aysen = nrow(enfermedad15_no_Aysen)
+no_Magallanes = nrow(enfermedad15_no_Magallanes)
+no_Otra = nrow(enfermedad15_no_Otra)
+
+
+Regiones_hartas = (Arica + Tarapaca + Antofagasta + Atacama + Coquimbo + Valpo + Bernardo
+                      + Maule + Ñuble + Biobio + Arauco + Rios + Lagos + Aysen + Magallanes
+                      + Otra)
+
+Regiones_no_hartas = (no_Arica + no_Tarapaca + no_Antofagasta + no_Atacama + no_Coquimbo +
+                      no_Valpo + no_Bernardo + no_Maule + no_Ñuble + no_Biobio +
+                      no_Arauco + no_Rios + no_Lagos + no_Aysen + no_Magallanes +
+                      no_Otra)
+
+tabla5 <- matrix(c(Metro, no_Metro, Regiones_hartas, Regiones_no_hartas), nrow = 2, byrow = TRUE)
+
+rownames(tabla5) <- c("Región Metropolitanas", "Otras")
+
+colnames(tabla5) <- c("Enfermedad presente", "Enfermedad ausente")
+
+kable(tabla5, format = "html", caption = "Tabla de Contingencia") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = FALSE)
+
+chisq.test(tabla5)
+```
+Como resultado del test teniendo un p-value < 0.05, y considerando un nivel de confianza del
+95%, rechazamos la hipótesis nula y aceptamos la hipótesis alternativa concluyendo
+que si existe una correlación, entre la región de residencia y el padecer Lupus Eritematoso Sistémico.
+
+
+### Variable uso de corticoides
+
+Ver si el uso o no uso de corticoides esta relacionado con la enfermedad
+
+```{r}
+no_usa = enfermedad15[enfermedad15$V53 == "No uso corticoide",] # No uso corticoide
+C2.5_menos = enfermedad15[enfermedad15$V53 == "2.5mg o menos al día",] # 2.5mg o menos al día
+C2.5_5 = enfermedad15[enfermedad15$V53 == "Entre 2.5 mg y 5 mg al día",] # Entre 2.5 mg y 5 mg al día
+C5_10 = enfermedad15[enfermedad15$V53 == "Entre 5 mg y 10 mg al día",]  # Entre 5 mg y 10 mg al día
+C10_15 = enfermedad15[enfermedad15$V53 == "Entre 10 mg y 15 mg al día",] # Entre 10 mg y 15 mg al día
+C15_20 = enfermedad15[enfermedad15$V53 == "Entre 15 mg y 20 mg al día",] # Entre 15 mg y 20 mg al día
+C20_30 = enfermedad15[enfermedad15$V53 == "Entre 20 mg y 30 mg al día",] # Entre 20 mg y 30 mg al día
+C30_40 = enfermedad15[enfermedad15$V53 == "Entre 30 mg y 40 mg al día",] # Entre 30 mg y 40 mg al día
+otra = enfermedad15[enfermedad15$V53 == "Otra dosis",] # Otra dosis
+
+Nno_usa = nrow(no_usa)
+N2.5_menos = nrow(C2.5_menos)
+N2.5_5 = nrow(C2.5_5)
+N5_10 = nrow(C5_10)
+N10_15 = nrow(C10_15)
+N15_20 = nrow(C15_20)
+N20_30 = nrow(C20_30)
+N30_40 = nrow(C30_40)
+Notra = nrow(otra)
+
+Respuestas_Corticoide <- c("No uso corticoide",
+                            "2.5mg o menos al día",
+                            "Entre 2.5 mg y 5 mg al día",
+                            "Entre 5 mg y 10 mg al día",
+                            "Entre 10 mg y 15 mg al día",
+                            "Entre 15 mg y 20 mg al día",
+                            "Entre 20 mg y 30 mg al día",
+                            "Entre 30 mg y 40 mg al día",
+                            "Otra dosis")
+
+Respuestas_Corticoide_N <- c(Nno_usa, N2.5_menos, N2.5_5, N5_10 , N10_15,
+                 N15_20 , N20_30, N30_40, Notra)
+
+Uso_Corticoides <- data.frame(Cantidad.Corticoides = Respuestas_Corticoide, Numero.Respuestas = Respuestas_Corticoide_N)
+
+# Convertir las categorías en factor con un orden explícito
+Uso_Corticoides$Cantidad.Corticoides <- factor(Uso_Corticoides$Cantidad.Corticoides,
+                                               levels = Respuestas_Corticoide)
+
+fig6 <- plot_ly(Uso_Corticoides, x = ~Cantidad.Corticoides, y = ~Numero.Respuestas, type = 'bar',
+               marker = list(color = 'green'))
+
+fig6 <- fig6 %>%
+  layout(title = "Frecuencia del uso de corticoides según cantidad",
+         xaxis = list(title = "Cantidad de corticoide", tickangle = -45),
+         yaxis = list(title = "Frecuencia"),
+         margin = list(b = 100))  # Espacio adicional para etiquetas inclinadas
+fig6
+```
+
+Como se pude ver en el grafico la mayoría de personas en presencia de la enfermedad no utilizan
+corticoides, por lo cual se hará el estudio de si la presencia de corticoides o no, se relacionan con
+la enfermedad en si. Para esto se hará el estudio utilizando chi square test para ver si la presencia o no
+de corticoides (siendo esta una variable no paramétrica dicotómica categórica) se relaciona con la enfermedad.
+por lo tanto, la hipótesis nula será:
+No existe una correlación entre la enfermedad y la presencia de corticoides
+. Y la hipótesis alternativa sería que si existe una relación.
+
+Ho: No existe una correlación entre la enfermedad y el uso de corticoides.
+Ha: Si existe una relación entre la enfermedad y el uso de corticoides.
+
+```{r}
+Grupo1 = data[data$V15 == "SI" & data$V53 != "No uso corticoide",]  # enfermedad y con el uso de corticodides
+Grupo2 = data[data$V15 == "SI" & data$V53 == "No uso corticoide",]  # enfermedad y sin uso de corticoides
+Grupo3 = data[data$V15 == "NO" & data$V53 != "No uso corticoide",]  # sin enfermedad pero con corticoides
+Grupo4 = data[data$V15 == "NO" & data$V53 == "No uso corticoide",]  # sin enfermedad y sin corticoides
+
+Grupo1 = nrow(Grupo1)
+Grupo2 = nrow(Grupo2)
+Grupo3 = nrow(Grupo3)
+Grupo4 = nrow(Grupo4)
+
+tabla6 <- matrix(c(Grupo1, Grupo2, Grupo3, Grupo4), nrow = 2, byrow = TRUE)
+
+# Asignar nombres a las filas y columnas
+rownames(tabla6) <- c("Lupus Eritematoso Sistémico presente", "Lupus Eritematoso Sistémico ausente")
+colnames(tabla6) <- c("con Corticoides", "Sin Corticoides")
+
+kable(tabla6, format = "html", caption = "Tabla de Contingencia") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = FALSE)
+
+chisq.test(tabla6)
+```
+
+## Variable Estado de Salud
+Se estudiara el estado de salud actual de los entrevistados afectados para ver los efectos de la enfermedad
+en la salud de los entrevistados
+
+```{r}
+enfermedad15_Excelente =  enfermedad15[enfermedad15$V69 == "Excelente", ]
+enfermedad15_Bueno =  enfermedad15[enfermedad15$V69 == "Bueno", ]
+enfermedad15_Regular =  enfermedad15[enfermedad15$V69 == "Regular", ]
+enfermedad15_Malo =  enfermedad15[enfermedad15$V69 == "Malo", ]
+enfermedad15_MMalo =  enfermedad15[enfermedad15$V69 == "Muy malo", ]
+
+Excelente = nrow(enfermedad15_Excelente)
+Bueno = nrow(enfermedad15_Bueno)
+Regular = nrow(enfermedad15_Regular)
+Malo = nrow(enfermedad15_Malo)
+MMalo = nrow(enfermedad15_MMalo)
+
+Estados <- c(
+  "Excelente",
+  "Bueno",
+  "Regular",
+  "Malo",
+  "Muy malo"
+)
+
+num <- c(Excelente, Bueno, Regular, Malo, MMalo)
+
+data_Regiones <- data.frame(estado = Estados, conteo = num)
+
+fig7 <- plot_ly(data_Regiones, x = ~estado, y = ~conteo, type = 'bar',
+               marker = list(color = 'skyblue'))
+
+fig7 <- fig7 %>%
+  layout(title = "Estado de salud de los afectados",
+         xaxis = list(title = "Estado de salud", tickangle = -45),
+         yaxis = list(title = "Personas afectadas"),
+         margin = list(b = 100))  # Espacio adicional para etiquetas inclinadas
+fig7
+
+```
+Como se observa en el grafico hay una diferencia de las regiones de los afectados, la mayoría,
+centrado en la región Metropolitana, por lo tanto, nuestra hipótesis nula será:
+No existe una correlación entre la enfermedad y la región de residencia del entrevistado
+que la posee. Y nuestra hipótesis alternativa sería que si existe una relación.
+
+Ho: No existe una correlación entre la enfermedad y la región de residencia
+Ha: Si existe una relación entre la enfermedad y la región de residencia
+
+Para el estudio de relación, se va a considerar los estados excelente, bueno y regular,
+vs malo y muy malo, para ver si afecta negativamente a la salud 
+ esto debido a que, la mayoría de entrevistados provienen de está región.
+ Se utilizará una prueba de contraste de 2 muestras, no pareadas,
+dado que los grupos son separados entre sí, por lo cual, se requerirá el test chisquare,
+el cual es adecuado para este tipo de pruebas en donde se quiere evaluar la relación entre
+variables no paramétricas categóricas dicotómicas.
+
+```{r}
+enfermedad15_no_Arica = enfermedad15_no[enfermedad15_no$V4 == "de Arica y Parinacota", ]
+enfermedad15_no_Tarapaca = enfermedad15_no[enfermedad15_no$V4 == "de Tarapacá", ]
+enfermedad15_no_Antofagasta = enfermedad15_no[enfermedad15_no$V4 == "de Antofagasta", ]
+enfermedad15_no_Atacama = enfermedad15_no[enfermedad15_no$V4 == "de Atacama", ]
+enfermedad15_no_Coquimbo = enfermedad15_no[enfermedad15_no$V4 == "de Coquimbo", ]
+enfermedad15_no_Valpo = enfermedad15_no[enfermedad15_no$V4 == "de Valparaíso", ]
+enfermedad15_no_Metro = enfermedad15_no[enfermedad15_no$V4 == "Metropolitana de Santiago", ]
+enfermedad15_no_Bernardo = enfermedad15_no[enfermedad15_no$V4 == "del Libertador Bernardo O'Higgins", ]
+enfermedad15_no_Maule = enfermedad15_no[enfermedad15_no$V4 == "del Maule", ]
+enfermedad15_no_Ñuble = enfermedad15_no[enfermedad15_no$V4 == "de Ñuble", ]
+enfermedad15_no_Biobio = enfermedad15_no[enfermedad15_no$V4 == "del Biobío", ]
+enfermedad15_no_Arauco = enfermedad15_no[enfermedad15_no$V4 == "de la Araucanía", ]
+enfermedad15_no_Rios = enfermedad15_no[enfermedad15_no$V4 == "de Los Ríos", ]
+enfermedad15_no_Lagos = enfermedad15_no[enfermedad15_no$V4 == "de Los Lagos", ]
+enfermedad15_no_Aysen = enfermedad15_no[enfermedad15_no$V4 == "de Aysén del General Carlos Ibañez del Campo", ]
+enfermedad15_no_Magallanes = enfermedad15_no[enfermedad15_no$V4 == "de Magallanes y la Antártica Chilena", ]
+enfermedad15_no_Otra = enfermedad15_no[enfermedad15_no$V4 == "Otra", ]
+
+no_Arica = nrow(enfermedad15_no_Arica)
+no_Tarapaca = nrow(enfermedad15_no_Tarapaca)
+no_Antofagasta = nrow(enfermedad15_no_Antofagasta)
+no_Atacama = nrow(enfermedad15_no_Atacama)
+no_Coquimbo = nrow(enfermedad15_no_Coquimbo)
+no_Valpo = nrow(enfermedad15_no_Valpo)
+no_Metro = nrow(enfermedad15_no_Metro)
+no_Bernardo = nrow(enfermedad15_no_Bernardo)
+no_Maule = nrow(enfermedad15_no_Maule)
+no_Ñuble = nrow(enfermedad15_no_Ñuble)
+no_Biobio = nrow(enfermedad15_no_Biobio)
+no_Arauco = nrow(enfermedad15_no_Arauco)
+no_Rios = nrow(enfermedad15_no_Rios)
+no_Lagos = nrow(enfermedad15_no_Lagos)
+no_Aysen = nrow(enfermedad15_no_Aysen)
+no_Magallanes = nrow(enfermedad15_no_Magallanes)
+no_Otra = nrow(enfermedad15_no_Otra)
+
+
+Regiones_hartas = (Arica + Tarapaca + Antofagasta + Atacama + Coquimbo + Valpo + Bernardo
+                      + Maule + Ñuble + Biobio + Arauco + Rios + Lagos + Aysen + Magallanes
+                      + Otra)
+
+Regiones_no_hartas = (no_Arica + no_Tarapaca + no_Antofagasta + no_Atacama + no_Coquimbo +
+                      no_Valpo + no_Bernardo + no_Maule + no_Ñuble + no_Biobio +
+                      no_Arauco + no_Rios + no_Lagos + no_Aysen + no_Magallanes +
+                      no_Otra)
+
+tabla5 <- matrix(c(Metro, no_Metro, Regiones_hartas, Regiones_no_hartas), nrow = 2, byrow = TRUE)
+
+rownames(tabla5) <- c("Región Metropolitanas", "Otras")
+
+colnames(tabla5) <- c("Enfermedad presente", "Enfermedad ausente")
+
+kable(tabla5, format = "html", caption = "Tabla de Contingencia") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = FALSE)
+
+chisq.test(tabla5)
+```
+Como resultado del test teniendo un p-value < 0.05, y considerando un nivel de confianza del
+95%, rechazamos la hipótesis nula y aceptamos la hipótesis alternativa concluyendo
+que si existe una correlación, entre la región de residencia y el padecer Lupus Eritematoso Sistémico.
+
+
+
+
+
+
+
+
+
+
